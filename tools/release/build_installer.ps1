@@ -64,3 +64,5 @@ $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
 "$hash  SetWhichGPU-$version-setup.exe" | Out-File -Encoding ascii "$setup.sha256"
 Write-Host ("Built {0} ({1:N1} MB)" -f $setup, ((Get-Item $setup).Length / 1MB)) -ForegroundColor Green
 Write-Host "SHA256 $hash"
+Write-Host "Release: upload the setup twice - as SetWhichGPU-$version-setup.exe AND as SetWhichGPU-setup.exe" -ForegroundColor Yellow
+Write-Host "(the website links to releases/latest/download/SetWhichGPU-setup.exe) - plus the .sha256 file."

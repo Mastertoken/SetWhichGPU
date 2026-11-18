@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/python-3.13-3776AB.svg" alt="Python 3.13">
 </p>
 
-<p align="center"><a href="https://mastertoken.github.io/SetWhichGPU/"><b>Website</b></a> · <a href="#install">Install</a> · <a href="#faq">FAQ</a></p>
+<p align="center"><a href="https://github.com/Mastertoken/SetWhichGPU/releases/latest/download/SetWhichGPU-setup.exe"><b>Download</b></a> · <a href="https://mastertoken.github.io/SetWhichGPU/"><b>Website</b></a> · <a href="#install">Install</a> · <a href="#faq">FAQ</a></p>
 
 SetWhichGPU is a free, open-source tray app for Windows 11. Press **`Ctrl+Alt+G`** over any application to see **which GPU it really runs on**, next to **the GPU Windows is told to use** – and change it in two clicks. Made for laptops with integrated + dedicated graphics and desktops with several GPUs (NVIDIA, AMD, Intel Arc).
 
@@ -63,7 +63,7 @@ Safety rules ([ADR-0002](docs/adr/0002-spielmodus-gpu-voruebergehend-deaktiviere
 
 ## Install
 
-**[Download the installer](https://github.com/Mastertoken/SetWhichGPU/releases/latest)** (`SetWhichGPU-<version>-setup.exe`, Windows 11, 64-bit) and run it.
+**[⬇ Download SetWhichGPU-setup.exe](https://github.com/Mastertoken/SetWhichGPU/releases/latest/download/SetWhichGPU-setup.exe)** (Windows 11, 64-bit, ~19 MB) and run it. Release notes and SHA-256 checksum: [latest release](https://github.com/Mastertoken/SetWhichGPU/releases/latest).
 
 - Installs **for your user only – no administrator rights** (optionally for all users)
 - Options: start with Windows, desktop shortcut
