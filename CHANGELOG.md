@@ -19,4 +19,5 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ### Fixed
 - Overlay was capped at 2/3 of the screen height, squeezing the GPU cards when the status text wrapped onto several lines
 - Long program paths were clipped next to the header buttons instead of being shortened with "…"
+- The Microsoft Basic Display Adapter (PCs without a GPU driver, virtual machines) was listed as a GPU; implausible PCI locations are now rejected
 - CUDA/OptiX load (e.g. Blender Cycles) was shown as 0 % because Windows' engine counters have no compute engine for NVIDIA; utilization now uses the maximum of all sources and NVML compute processes

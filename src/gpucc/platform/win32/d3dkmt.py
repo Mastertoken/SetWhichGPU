@@ -38,6 +38,14 @@ for _name in ("D3DKMTOpenAdapterFromLuid", "D3DKMTQueryAdapterInfo", "D3DKMTClos
     getattr(_gdi32, _name).restype = ctypes.c_long
 
 
+def pci_address_or_none(bus: int, dev: int, fn: int) -> PciAddress | None:
+    """Only real PCI locations (bus ≤ 255, device ≤ 31, function ≤ 7). Virtual display adapters
+    (e.g. the Microsoft Basic Display Adapter in VMs) report garbage such as device 22048."""
+    if _INVALID in (bus, dev, fn) or not (0 <= bus <= 0xFF and 0 <= dev <= 0x1F and 0 <= fn <= 0x7):
+        return None
+    return PciAddress(bus, dev, fn)
+
+
 def adapter_pci_address(luid: int) -> PciAddress | None:
     """PCI bus/device/function of the adapter, or ``None`` for virtual/indirect adapters."""
     req = _OPENADAPTERFROMLUID(LUID.from_int(luid), 0)
@@ -54,8 +62,6 @@ def adapter_pci_address(luid: int) -> PciAddress | None:
         if _gdi32.D3DKMTQueryAdapterInfo(ctypes.byref(q)) != 0:
             return None
         bus, dev, fn = int(addr.BusNumber), int(addr.DeviceNumber), int(addr.FunctionNumber)
-        if _INVALID in (bus, dev, fn) or dev == 0xFFFF:
-            return None
-        return PciAddress(bus, dev, fn)
+        return pci_address_or_none(bus, dev, fn)
     finally:
         _gdi32.D3DKMTCloseAdapter(ctypes.byref(_CLOSEADAPTER(req.hAdapter)))

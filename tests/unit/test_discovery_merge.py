@@ -20,6 +20,26 @@ def test_virtual_and_software_adapters_ignored(discovery):
     assert "Meta Virtual Monitor" in text
 
 
+def test_microsoft_basic_display_adapter_is_not_a_gpu():
+    """Regression (GitHub CI VM): the Basic Display Adapter is not flagged as software."""
+    from gpucc.core.models import PciAddress
+    from gpucc.discovery.merge import AdapterRecord
+
+    basic = AdapterRecord(
+        "Microsoft Basic Display Adapter", 0x1414, 0x8C, 0, 0, 0, 1 << 30, 7, False, PciAddress(0, 1, 0)
+    )
+    r = merge([basic], [])
+    assert r.gpus == () and any("Microsoft display adapter" in i for i in r.ignored)
+
+
+def test_implausible_pci_location_is_rejected():
+    from gpucc.platform.win32.d3dkmt import pci_address_or_none
+
+    assert pci_address_or_none(0, 22048, 57543) is None  # seen on a Hyper-V VM
+    assert pci_address_or_none(0x75, 0, 0) is not None
+    assert pci_address_or_none(0, 31, 7) is not None and pci_address_or_none(0, 32, 0) is None
+
+
 def test_integrated_detection_and_driver(discovery, keys):
     amd = discovery.by_key(keys["amd"])
     arc = discovery.by_key(keys["intel"])

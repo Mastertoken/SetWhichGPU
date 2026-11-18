@@ -9,6 +9,8 @@ from gpucc.core.models import DiscoveryResult, GpuInfo, GpuKey, PciAddress, Vend
 
 #: Adapters with less dedicated memory than this are treated as integrated (carve-out only).
 INTEGRATED_VRAM_THRESHOLD = 1 << 30
+#: PCI vendor id of Microsoft's own display adapters (Basic Display/Render Adapter, Hyper-V video).
+MICROSOFT_VENDOR_ID = 0x1414
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +50,10 @@ def merge(
     for a in adapters:
         if a.is_software:
             ignored.append(f"software adapter: {a.description}")
+            continue
+        if a.vendor_id == MICROSOFT_VENDOR_ID:
+            # Basic Display/Render Adapter, Hyper-V video: no GPU an app could be assigned to.
+            ignored.append(f"Microsoft display adapter (no driver / virtual machine): {a.description}")
             continue
         if a.pci is None:
             ignored.append(f"virtual/indirect adapter without PCI address: {a.description}")
