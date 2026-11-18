@@ -38,12 +38,14 @@
   "screenshot": "https://mastertoken.github.io/SetWhichGPU/assets/overlay-apps.png",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Windows 11",
-  "softwareVersion": "0.0.1",
+  "softwareVersion": "0.1.0",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "inLanguage": ["en", "de", "es", "fr"],
   "codeRepository": "https://github.com/Mastertoken/SetWhichGPU",
+  "downloadUrl": "https://github.com/Mastertoken/SetWhichGPU/releases/latest",
+  "fileSize": "19MB",
   "author": { "@type": "Person", "name": "Mastertoken", "url": "https://github.com/Mastertoken" }
 }
 </script>
@@ -175,8 +177,8 @@ footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--m
       <h1>See and set which GPU every Windows app uses</h1>
       <p class="lead">SetWhichGPU is a free, open-source Windows&nbsp;11 tool for PCs with more than one graphics card. Press <b>Ctrl+Alt+G</b> over any app to see the GPU it <em>really</em> runs on, next to the GPU Windows is told to use – and change it in two clicks.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/Mastertoken/SetWhichGPU">Get it on GitHub</a>
-        <a class="btn" href="#install">How to install</a>
+        <a class="btn primary" href="https://github.com/Mastertoken/SetWhichGPU/releases/latest">Download for Windows 11</a>
+        <a class="btn" href="https://github.com/Mastertoken/SetWhichGPU">Source on GitHub</a>
       </div>
       <p class="small">MIT license · No admin rights · No telemetry · English, Deutsch, Español, Français</p>
     </div>
@@ -217,7 +219,7 @@ footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--m
       <div>
         <h2>How to choose the GPU for an app</h2>
         <ol class="steps">
-          <li>Start SetWhichGPU – it lives in the system tray.</li>
+          <li><a href="#install">Install</a> and start SetWhichGPU – it lives in the system tray.</li>
           <li>Press <b>Ctrl+Alt+G</b> over the app, or open the <b>Applications</b> list and pick any installed program or game.</li>
           <li>Click the graphics card you want and press <b>Apply</b>.</li>
           <li>Restart the app. The overlay confirms whether it now runs on the chosen GPU.</li>
@@ -270,13 +272,17 @@ footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--m
 
   <section id="install">
     <div class="wrap">
-      <h2>Install</h2>
-      <p>SetWhichGPU is in early development. Until installers are available, run it from source with Python&nbsp;3.13 and <a href="https://docs.astral.sh/uv/">uv</a>:</p>
-<pre><code>git clone https://github.com/Mastertoken/SetWhichGPU.git
-cd SetWhichGPU
-uv sync
-uv run python -m gpucc</code></pre>
-      <p class="small">Requires Windows 11. Language follows Windows (English, German, Spanish, French) and can be changed in the tray menu.</p>
+      <h2>Download and install</h2>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/Mastertoken/SetWhichGPU/releases/latest">Download for Windows 11</a>
+      </div>
+      <ul>
+        <li>Free installer (about 19&nbsp;MB), installs <b>for your user – no administrator rights</b>.</li>
+        <li>Options: start with Windows, desktop shortcut.</li>
+        <li>Uninstall via <i>Settings → Apps</i>: SetWhichGPU closes, removes its autostart and asks whether to <b>restore the GPU preferences</b> it changed.</li>
+        <li>The installer is not code-signed yet, so Windows SmartScreen may warn: choose <i>More info → Run anyway</i>. Every release lists the SHA-256 checksum.</li>
+      </ul>
+      <p class="small">Requires Windows 11 (64-bit). Language follows Windows (English, German, Spanish, French) and can be changed in the tray menu. Developers can also <a href="https://github.com/Mastertoken/SetWhichGPU#run-from-source">run it from source</a>.</p>
     </div>
   </section>
 

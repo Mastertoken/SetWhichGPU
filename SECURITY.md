@@ -16,7 +16,10 @@ Security-relevant parts of SetWhichGPU:
 - Reading process information of other applications (path, version resource, GPU usage)
 - Parsing untrusted local files (Steam `appinfo.vdf`/manifests, Epic manifests, Start Menu shortcuts)
 - The **game mode helper** (`gpucc.gamemode.helper`, see `docs/adr/0002-…`), which runs **elevated** for the duration of a game session. It validates its arguments (PCI instance ID and executable name only) and calls `pnputil` exclusively with `/disable-device` or `/enable-device` – never `/force`, never `/remove-device`
+- The **uninstall clean-up** (`SetWhichGPU.exe --uninstall`), which removes the autostart entry and, if confirmed, restores GPU preferences from the change journal
 - Any future local API / MCP server
+
+Note on per-user installs: the default installation folder (`%LOCALAPPDATA%\Programs\SetWhichGPU`) is writable by your user account, and game mode elevates that executable via UAC. If other software running under your account is not trusted, choose **"Install for all users"** in the installer (Program Files, write-protected).
 
 ## Design principles
 

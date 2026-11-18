@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -37,14 +35,14 @@ class Status:
 
 
 def helper_command(session: Session | None, state_dir: Path, enable_only: bool = False) -> tuple[str, str]:
-    """(executable, parameters) for the elevated helper; pythonw keeps it windowless."""
-    exe = Path(sys.executable)
-    pythonw = exe.with_name("pythonw.exe")
-    params = ["-m", "gpucc.gamemode.helper", "--state-dir", str(state_dir)]
+    """(executable, parameters) for the elevated helper – a windowless sub-command of SetWhichGPU itself."""
+    from gpucc.launch import GAMEMODE_HELPER, self_command, split_for_shell_execute
+
+    params = [GAMEMODE_HELPER, "--state-dir", str(state_dir)]
     if session is not None:
         params += ["--instance-id", session.instance_id]
         params += ["--enable-only"] if enable_only else ["--process", session.process_name]
-    return str(pythonw if pythonw.exists() else exe), subprocess.list2cmdline(params)
+    return split_for_shell_execute(self_command(*params))
 
 
 class GameModeService(QObject):

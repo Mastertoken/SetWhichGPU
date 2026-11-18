@@ -1,7 +1,8 @@
 """Elevated game-mode helper (started via UAC by the tray app; ADR-0002).
 
-    pythonw -m gpucc.gamemode.helper --instance-id <PCI\\…> --process <game.exe> --state-dir <dir>
-    pythonw -m gpucc.gamemode.helper --instance-id <PCI\\…> --enable-only --state-dir <dir>
+    SetWhichGPU.exe --gamemode-helper --instance-id <PCI\\…> --process <game.exe> --state-dir <dir>
+    SetWhichGPU.exe --gamemode-helper --instance-id <PCI\\…> --enable-only --state-dir <dir>
+    (from source: pythonw -m gpucc --gamemode-helper …)
 
 Only validated arguments are accepted; the only privileged action is pnputil /disable-device or
 /enable-device for that one device. Progress goes to <state-dir>/state.json, a file named 'stop'
@@ -58,7 +59,7 @@ def write_state(state_dir: Path, phase: Phase, detail: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="gpucc.gamemode.helper")
+    parser = argparse.ArgumentParser(prog="SetWhichGPU --gamemode-helper")
     parser.add_argument("--instance-id", required=True)
     parser.add_argument("--process", default="")
     parser.add_argument("--state-dir", required=True)

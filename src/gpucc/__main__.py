@@ -1,4 +1,8 @@
-"""Entry point: ``python -m gpucc``."""
+"""Entry point: ``python -m gpucc`` / ``SetWhichGPU.exe``.
+
+Sub-commands (used by the app itself and by the uninstaller, see ``gpucc.launch``):
+``--gamemode-helper …`` runs the elevated game-mode helper, ``--uninstall …`` the uninstall clean-up.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +16,21 @@ RESTART_WAIT_S = 15.0
 
 
 def main() -> int:
+    from gpucc.launch import GAMEMODE_HELPER, UNINSTALL
+
+    args = sys.argv[1:]
+    if args[:1] == [GAMEMODE_HELPER]:
+        from gpucc.gamemode.helper import main as helper_main
+
+        return helper_main(args[1:])
+    if args[:1] == [UNINSTALL]:
+        from gpucc.uninstall import main as uninstall_main
+
+        return uninstall_main(args[1:])
+    return run_app()
+
+
+def run_app() -> int:
     from gpucc.branding import LANGUAGE_SETTING, RESTART_FLAG
     from gpucc.diagnostics.logging import configure_logging
     from gpucc.diagnostics.paths import log_dir
@@ -37,7 +56,7 @@ def main() -> int:
 
     from PySide6.QtWidgets import QApplication
 
-    from gpucc.app import Controller, autostart_command, configured_hotkey, migrate_autostart
+    from gpucc.app import Controller, autostart_command, configured_hotkey, migrate_autostart, refresh_autostart
     from gpucc.appdetect.foreground import WindowsForegroundProbe
     from gpucc.branding import APP_NAME, LEGACY_AUTOSTART_NAME
     from gpucc.diagnostics.paths import data_dir
@@ -57,6 +76,10 @@ def main() -> int:
     autostart = AutostartEntry()
     if migrate_autostart(autostart, AutostartEntry(LEGACY_AUTOSTART_NAME), autostart_command()):
         log.info("autostart entry migrated from the former product name")
+    from gpucc.launch import frozen
+
+    if frozen() and refresh_autostart(autostart, autostart_command()):
+        log.info("autostart entry now points to this installation")
     controller = Controller(
         app,
         discovery=WindowsGpuDiscovery(),

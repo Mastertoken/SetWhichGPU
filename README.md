@@ -63,7 +63,18 @@ Safety rules ([ADR-0002](docs/adr/0002-spielmodus-gpu-voruebergehend-deaktiviere
 
 ## Install
 
-Requirements: **Windows 11** (Windows 10 is untested; the "specific GPU" option is a Windows 11 feature), **Python 3.13** and **[uv](https://docs.astral.sh/uv/)**. Installers are planned.
+**[Download the installer](https://github.com/Mastertoken/SetWhichGPU/releases/latest)** (`SetWhichGPU-<version>-setup.exe`, Windows 11, 64-bit) and run it.
+
+- Installs **for your user only – no administrator rights** (optionally for all users)
+- Options: start with Windows, desktop shortcut
+- Uninstall via *Settings → Apps*: closes SetWhichGPU, removes autostart and asks whether to **restore the GPU preferences** it changed and whether to delete its settings and logs
+- The installer is not code-signed yet, so Windows SmartScreen may warn ("Windows protected your PC" → *More info* → *Run anyway*). Each release lists the SHA-256 checksum of the installer
+
+SetWhichGPU then lives in the system tray. Language: tray menu → *Language*. Hotkey: `Ctrl+Alt+G` (another one via the environment variable `GPUCC_HOTKEY`, e.g. `Ctrl+Shift+F9`; a settings dialog is planned).
+
+### Run from source
+
+Requirements: **Windows 11**, **Python 3.13** and **[uv](https://docs.astral.sh/uv/)**.
 
 ```powershell
 git clone https://github.com/Mastertoken/SetWhichGPU.git
@@ -72,8 +83,7 @@ uv sync
 uv run python -m gpucc
 ```
 
-SetWhichGPU then lives in the system tray. Language: tray menu → *Language* (or `$env:GPUCC_LANG = "en"` / `de` / `es` / `fr`). Hotkey: `$env:GPUCC_HOTKEY = "Ctrl+Shift+F9"` (a settings dialog is planned).
-
+Build the installer yourself: `.\tools\release\build_installer.ps1` (needs [Inno Setup 6](https://jrsoftware.org/isinfo.php): `winget install JRSoftware.InnoSetup`).
 ## FAQ
 
 **How do I make an app use a specific GPU on Windows 11?**

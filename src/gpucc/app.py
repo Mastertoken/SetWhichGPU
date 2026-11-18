@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from collections import deque
-from pathlib import Path
 
 from PySide6.QtCore import QObject, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication, QScreen
@@ -31,6 +29,7 @@ from gpucc.gamemode.core import FINAL_PHASES, Phase, preflight
 from gpucc.gamemode.service import GameModeService, Session
 from gpucc.gamemode.service import Status as GameModeStatus
 from gpucc.i18n import SYSTEM, language, resolve_language, tr
+from gpucc.launch import self_command, self_command_line
 from gpucc.library.scanner import learn_render_exes
 from gpucc.library.service import LibraryService
 from gpucc.monitoring.attribution import observe
@@ -103,20 +102,27 @@ def migrate_autostart(current: AutostartEntry, legacy: AutostartEntry, command: 
     return True
 
 
-def _gui_python() -> Path:
-    exe = Path(sys.executable)
-    pythonw = exe.with_name("pythonw.exe")
-    return pythonw if pythonw.exists() else exe
-
-
 def autostart_command() -> str:
-    """Start without console window using the interpreter of this environment."""
-    return f'"{_gui_python()}" -m gpucc'
+    """Windowless start of this installation (SetWhichGPU.exe, or pythonw -m gpucc from source)."""
+    return self_command_line()
+
+
+def refresh_autostart(entry: AutostartEntry, command: str) -> bool:
+    """An enabled autostart that points to another location (moved/re-installed) is updated to ``command``."""
+    current = entry.command()
+    if not current or current == command:
+        return False
+    try:
+        entry.enable(command)
+    except OSError:
+        log.exception("autostart update failed")
+        return False
+    return True
 
 
 def restart_command() -> list[str]:
     """New instance that waits until this one has released the single-instance lock."""
-    return [str(_gui_python()), "-m", "gpucc", RESTART_FLAG]
+    return self_command(RESTART_FLAG)
 
 
 class Controller(QObject):
@@ -166,6 +172,7 @@ class Controller(QObject):
         app.installNativeEventFilter(self.hotkeys.native_filter)
         self.hotkeys.hotkey_pressed.connect(self.toggle_overlay)
         self.hotkeys.show_requested.connect(self.open_overlay)
+        self.hotkeys.quit_requested.connect(self.quit)
         self.hotkeys.hardware_changed.connect(self.rescan)
         self.tray = TrayService(
             str(hotkey),

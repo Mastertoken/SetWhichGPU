@@ -38,6 +38,9 @@ class _Filter(QAbstractNativeEventFilter):
         if msg.message == user32.WM_APP_SHOW_OVERLAY:
             self._service.show_requested.emit()
             return True, 0
+        if msg.message == user32.WM_APP_QUIT:
+            self._service.quit_requested.emit()
+            return True, 0
         if msg.message in (user32.WM_DISPLAYCHANGE, user32.WM_DEVICECHANGE):
             self._service.debounce.start()
         return False, 0
@@ -46,6 +49,7 @@ class _Filter(QAbstractNativeEventFilter):
 class HotkeyService(QObject):
     hotkey_pressed = Signal()
     show_requested = Signal()  # second instance asked us to show the overlay
+    quit_requested = Signal()  # uninstaller asked us to exit
     hardware_changed = Signal()  # debounced WM_DISPLAYCHANGE / WM_DEVICECHANGE
 
     def __init__(self) -> None:
@@ -82,3 +86,9 @@ def notify_running_instance() -> bool:
     """Ask an already running instance to show its overlay."""
     hwnd = user32.find_window(MESSAGE_WINDOW_TITLE)
     return bool(hwnd) and user32.post_message(hwnd, user32.WM_APP_SHOW_OVERLAY)
+
+
+def ask_running_instance_to_quit() -> bool:
+    """Ask an already running instance to exit (it ends game mode and re-enables the GPU on its way out)."""
+    hwnd = user32.find_window(MESSAGE_WINDOW_TITLE)
+    return bool(hwnd) and user32.post_message(hwnd, user32.WM_APP_QUIT)

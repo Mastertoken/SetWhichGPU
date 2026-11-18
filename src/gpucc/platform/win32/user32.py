@@ -11,6 +11,7 @@ WM_DISPLAYCHANGE = 0x007E
 WM_DEVICECHANGE = 0x0219
 WM_APP = 0x8000
 WM_APP_SHOW_OVERLAY = WM_APP + 0x47
+WM_APP_QUIT = WM_APP + 0x48  # uninstaller/updater asks the running instance to exit cleanly
 
 # SHQueryUserNotificationState
 QUNS_BUSY = 2

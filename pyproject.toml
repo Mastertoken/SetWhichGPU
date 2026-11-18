@@ -1,6 +1,6 @@
 [project]
 name = "gpucc"
-version = "0.0.1"
+version = "0.1.0"
 description = "SetWhichGPU – Windows 11 tray app with hotkey overlay for GPU monitoring and per-app GPU preferences"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
@@ -34,6 +34,7 @@ dev = [
     "pytest-qt>=4.4",
     "ruff>=0.8",
     "mypy>=1.13",
+    "pyinstaller>=6.22.3",
 ]
 
 [build-system]

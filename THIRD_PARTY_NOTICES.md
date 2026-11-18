@@ -1,12 +1,17 @@
 # Third-party notices
 
-SetWhichGPU is MIT licensed. It uses the following third-party software at runtime:
+SetWhichGPU is MIT licensed. It uses the following third-party software at runtime. The installer
+(`SetWhichGPU-<version>-setup.exe`) **distributes** these components; their full license texts are
+installed to `<install folder>\licenses\` (collected by `tools/release/collect_licenses.py`).
 
 | Component | License | Notes |
 |---|---|---|
-| [PySide6 / Qt for Python](https://www.qt.io/qt-for-python) (`PySide6-Essentials`, `shiboken6`) | LGPL-3.0-only (or commercial) | Used unmodified as a dynamically loaded library. Distributed builds must keep PySide6 replaceable and ship its license text |
+| [PySide6 / Qt for Python](https://www.qt.io/qt-for-python) (`PySide6-Essentials`, `shiboken6`) | LGPL-3.0-only (or GPL / commercial) | Used unmodified under the LGPL-3.0, as separate dynamically loaded libraries in the `_internal` folder, which you may replace with your own compatible build. Source: [download.qt.io](https://download.qt.io/official_releases/QtForPython/pyside6/), [code.qt.io/pyside](https://code.qt.io/cgit/pyside/pyside-setup.git/) |
 | [nvidia-ml-py](https://pypi.org/project/nvidia-ml-py/) | BSD-3-Clause | Python bindings for NVML |
-| [Python](https://www.python.org/) | PSF License | Interpreter |
+| [Python](https://www.python.org/) | PSF License | Interpreter (embedded in the installer build) |
+| [PyInstaller](https://pyinstaller.org/) bootloader | GPL-2.0-or-later with bootloader exception | The exception allows distributing the bundled application under its own license |
+
+The installer itself is built with [Inno Setup](https://jrsoftware.org/isinfo.php) (Inno Setup license, permits use for any purpose).
 
 System libraries that are **used but not distributed** (they come with Windows or the GPU drivers):
 

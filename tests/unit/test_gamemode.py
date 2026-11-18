@@ -233,7 +233,7 @@ def test_helper_command_quotes_arguments(tmp_path):
 
     exe, params = helper_command(Session(RTX_ID, "RTX 3060", "My Game.exe", "My Game"), tmp_path)
     assert exe.lower().endswith(("pythonw.exe", "python.exe"))
-    assert "-m gpucc.gamemode.helper" in params and '"My Game.exe"' in params and RTX_ID in params
+    assert "-m gpucc --gamemode-helper" in params and '"My Game.exe"' in params and RTX_ID in params
     _exe, recovery = helper_command(Session(RTX_ID, "RTX", "x.exe", "X"), tmp_path, enable_only=True)
     assert "--enable-only" in recovery and "--process" not in recovery
 
