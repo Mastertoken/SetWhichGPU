@@ -1,0 +1,41 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Please check the README section "What it can and cannot do" first – many apps choose their GPU themselves.
+  - type: textarea
+    id: gpus
+    attributes:
+      label: GPU setup
+      description: Every GPU (vendor + model), which one drives your monitors, desktop or laptop
+      placeholder: "NVIDIA RTX 3060 (no monitor), Intel Arc B580 (2 monitors), AMD iGPU – desktop"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows build
+      description: Output of `winver`, and whether hardware-accelerated GPU scheduling is on
+      placeholder: "Windows 11 24H2, build 26100.xxxx, HAGS on"
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Affected application
+      placeholder: "Blender 4.5 (Cycles, OptiX)"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt
+      description: Tray menu → "Open log folder" → gpucc.log. Remove anything you consider private (paths contain your user name).
+      render: text

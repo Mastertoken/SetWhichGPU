@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SetWhichGPU – Set Which GPU Each App Uses on Windows 11</title>
+<meta name="description" content="Free, open-source Windows 11 tool: see which GPU an app really uses and set a specific GPU per app – NVIDIA, Intel Arc, AMD. Hotkey overlay, no admin.">
+<meta name="keywords" content="choose GPU per app, set preferred GPU Windows 11, force app to use NVIDIA GPU, which GPU is my app using, graphics preference per application, multi-GPU, Intel Arc, iGPU dGPU, GPU switcher">
+<link rel="canonical" href="https://mastertoken.github.io/SetWhichGPU/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0F1115">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icon-256.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SetWhichGPU">
+<meta property="og:title" content="SetWhichGPU – See and set which GPU every Windows app uses">
+<meta property="og:description" content="Free, open-source hotkey overlay for multi-GPU PCs: measured GPU vs. preferred GPU, per-app GPU selection, live load and VRAM.">
+<meta property="og:url" content="https://mastertoken.github.io/SetWhichGPU/">
+<meta property="og:image" content="https://mastertoken.github.io/SetWhichGPU/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SetWhichGPU overlay showing Blender running on a GeForce RTX 3060 next to an Intel Arc and an AMD Radeon GPU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SetWhichGPU – See and set which GPU every Windows app uses">
+<meta name="twitter:description" content="Free, open-source hotkey overlay for multi-GPU Windows PCs.">
+<meta name="twitter:image" content="https://mastertoken.github.io/SetWhichGPU/assets/social-card.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SetWhichGPU",
+  "description": "See and set which GPU every Windows app uses. A tray app with a hotkey overlay that shows the GPU an application really uses next to its stored Windows graphics preference, and lets you pick a specific GPU per app.",
+  "url": "https://mastertoken.github.io/SetWhichGPU/",
+  "image": "https://mastertoken.github.io/SetWhichGPU/assets/icon-256.png",
+  "screenshot": "https://mastertoken.github.io/SetWhichGPU/assets/overlay-apps.png",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Windows 11",
+  "softwareVersion": "0.0.1",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "inLanguage": ["en", "de", "es", "fr"],
+  "codeRepository": "https://github.com/Mastertoken/SetWhichGPU",
+  "author": { "@type": "Person", "name": "Mastertoken", "url": "https://github.com/Mastertoken" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I make an app use a specific GPU on Windows 11?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Windows stores a graphics preference per program. SetWhichGPU sets it for you: press Ctrl+Alt+G over the app (or pick it from the application list), choose the graphics card and apply. It takes effect the next time the app starts. Besides power saving and high performance you can pick one specific GPU, which matters on PCs with three or more GPUs." }
+    },
+    {
+      "@type": "Question",
+      "name": "How can I see which GPU a program is actually using?",
+      "acceptedAnswer": { "@type": "Answer", "text": "SetWhichGPU measures the GPU engines and video memory each process uses (Windows performance counters, plus NVML for NVIDIA and IGCL for Intel Arc) and shows the measured GPU next to the stored preference, with load, VRAM, temperature and power per GPU." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does my game ignore the Windows GPU preference?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Some applications enumerate all GPUs and choose one themselves, for example many games, Blender Cycles and CUDA or AI tools. Windows cannot override that. SetWhichGPU detects and reports it instead of showing a misleading success. For games it offers an optional game mode that temporarily disables the unwanted GPU while you play and enables it again afterwards." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SetWhichGPU need administrator rights or change drivers?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. It only writes the per-user graphics preference that Windows Settings also uses, logs every change first and can undo all changes from the tray menu. It never modifies drivers, never injects into other processes and sends no telemetry. Only the optional game mode asks for administrator rights, once, to disable and re-enable a device." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work on laptops with integrated and dedicated graphics?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes, it works with any GPUs Windows exposes as separate adapters: integrated plus dedicated graphics in laptops, desktops with several graphics cards, NVIDIA, AMD and Intel Arc. Two identical GPUs of the same model cannot be told apart by Windows, so selection is disabled in that case." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is SetWhichGPU free?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. SetWhichGPU is free and open source under the MIT license. The source code is on GitHub." }
+    }
+  ]
+}
+</script>
+
+<style>
+:root {
+  --bg: #F6F7F9; --surface: #FFFFFF; --text: #14171C; --muted: #505864; --line: #DDE1E7;
+  --accent: #2F63D8; --accent-text: #FFFFFF; --ok: #13804F; --warn: #A15C00; --code: #EEF1F5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1115; --surface: #171A21; --text: #E8EAED; --muted: #A2A9B3; --line: #2A2F38;
+    --accent: #7AA7FF; --accent-text: #0F1115; --ok: #4CC38A; --warn: #F2B54A; --code: #1E232C;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1115; --surface: #171A21; --text: #E8EAED; --muted: #A2A9B3; --line: #2A2F38;
+  --accent: #7AA7FF; --accent-text: #0F1115; --ok: #4CC38A; --warn: #F2B54A; --code: #1E232C;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 17px/1.6 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+a { color: var(--accent); }
+img { max-width: 100%; height: auto; display: block; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+header.top { padding: 18px 0; }
+header.top .wrap { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text); text-decoration: none; }
+.brand img { width: 32px; height: 32px; border-radius: 7px; }
+nav a { color: var(--muted); text-decoration: none; margin-left: 18px; font-size: 15px; }
+nav a:hover { color: var(--text); }
+.hero { display: grid; grid-template-columns: 1fr; gap: 32px; padding-top: 32px; padding-bottom: 56px; align-items: center; }
+@media (min-width: 900px) { .hero { grid-template-columns: 5fr 6fr; padding-top: 48px; } }
+h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.12; margin: 0 0 16px; letter-spacing: -0.5px; }
+.lead { font-size: 19px; color: var(--muted); margin: 0 0 24px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.btn {
+  display: inline-block; padding: 11px 20px; border-radius: 10px; font-weight: 600; text-decoration: none;
+  border: 1px solid var(--line); color: var(--text); background: var(--surface);
+}
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.small { font-size: 14px; color: var(--muted); }
+.shot { border-radius: 14px; box-shadow: 0 18px 50px rgba(0,0,0,.28); }
+.shot.narrow { max-width: 420px; margin: 0 auto; }
+.hero > *, .two > *, .grid > * { min-width: 0; } /* let wide screenshots shrink instead of widening the page */
+@media (max-width: 600px) {
+  nav a:not(.gh) { display: none; }
+  body { font-size: 16px; }
+}
+section { padding: 48px 0; border-top: 1px solid var(--line); }
+h2 { font-size: clamp(24px, 3.2vw, 32px); line-height: 1.2; margin: 0 0 16px; }
+h3 { font-size: 19px; margin: 0 0 6px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+.card p { margin: 0; color: var(--muted); font-size: 16px; }
+.two { display: grid; gap: 32px; grid-template-columns: 1fr; align-items: center; }
+@media (min-width: 900px) { .two { grid-template-columns: 1fr 1fr; } }
+ol.steps { padding-left: 22px; } ol.steps li { margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.yes { color: var(--ok); font-weight: 600; } .no { color: var(--warn); font-weight: 600; }
+.table-scroll { overflow-x: auto; }
+pre { background: var(--code); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 15px; }
+code { font-family: "Cascadia Code", Consolas, monospace; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { color: var(--muted); margin: 10px 0 0; }
+footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="assets/icon-256.png" alt="" width="32" height="32">SetWhichGPU</a>
+    <nav aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/Mastertoken/SetWhichGPU">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div>
+      <h1>See and set which GPU every Windows app uses</h1>
+      <p class="lead">SetWhichGPU is a free, open-source Windows&nbsp;11 tool for PCs with more than one graphics card. Press <b>Ctrl+Alt+G</b> over any app to see the GPU it <em>really</em> runs on, next to the GPU Windows is told to use – and change it in two clicks.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/Mastertoken/SetWhichGPU">Get it on GitHub</a>
+        <a class="btn" href="#install">How to install</a>
+      </div>
+      <p class="small">MIT license · No admin rights · No telemetry · English, Deutsch, Español, Français</p>
+    </div>
+    <img class="shot" src="assets/overlay-apps.png" width="1125" height="921"
+         alt="SetWhichGPU overlay: Blender uses the GeForce RTX 3060 at 97 percent, preference set to the RTX 3060, with Intel Arc Pro and AMD Radeon GPUs listed and the application list open">
+  </div>
+
+  <section id="problem">
+    <div class="wrap two">
+      <div>
+        <h2>“Which GPU is my app actually using?”</h2>
+        <p>Windows can tell an app which graphics card to prefer (<i>Settings → System → Display → Graphics</i>). But it never shows which GPU the app <b>actually</b> ended up on, the setting is buried several clicks deep, and nothing tells you when an app simply ignores it.</p>
+        <p>On a laptop with integrated and dedicated graphics, or a desktop with an NVIDIA, an Intel Arc and an AMD GPU, that means guessing. SetWhichGPU replaces the guessing with measurements.</p>
+      </div>
+      <div class="card">
+        <h3>Measured vs. preferred – never mixed up</h3>
+        <p>The overlay shows three honest lines: the GPU the app <b>uses</b> (measured from GPU engine activity and video memory), the stored <b>preference</b>, and a <b>status</b> that says whether the preference is active, whether the app needs a restart, or whether the app picks its GPU itself.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Features</h2>
+      <div class="grid">
+        <div class="card"><h3>Hotkey overlay</h3><p>Ctrl+Alt+G opens a compact overlay above the active app – borderless fullscreen, several monitors and mixed DPI included.</p></div>
+        <div class="card"><h3>Per-app GPU selection</h3><p>Choose Windows default, power saving, high performance or one <b>specific</b> GPU. Essential on PCs with three or more GPUs.</p></div>
+        <div class="card"><h3>Live GPU monitoring</h3><p>Load, VRAM, temperature and power per GPU, and the GPU usage of every application, including CUDA compute.</p></div>
+        <div class="card"><h3>All your apps and games</h3><p>Running apps, background GPU processes, installed programs and Steam, Epic and GOG games – set the GPU before you start them.</p></div>
+        <div class="card"><h3>Pin mode</h3><p>Pin the overlay and it stays visible, following whichever application you switch to.</p></div>
+        <div class="card"><h3>Safe and reversible</h3><p>Every change is logged before it is written and can be undone from the tray menu. Per-user settings only, no drivers touched.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap two">
+      <div>
+        <h2>How to choose the GPU for an app</h2>
+        <ol class="steps">
+          <li>Start SetWhichGPU – it lives in the system tray.</li>
+          <li>Press <b>Ctrl+Alt+G</b> over the app, or open the <b>Applications</b> list and pick any installed program or game.</li>
+          <li>Click the graphics card you want and press <b>Apply</b>.</li>
+          <li>Restart the app. The overlay confirms whether it now runs on the chosen GPU.</li>
+        </ol>
+        <p>Windows applies GPU preferences when a program starts, so a running process cannot be moved to another GPU. SetWhichGPU only asks for a restart when it is really needed.</p>
+      </div>
+      <img class="shot narrow" src="assets/overlay-game.png" width="720" height="1035" loading="lazy"
+           alt="SetWhichGPU overlay for a game that ignores the Windows GPU preference, with an honest warning and the optional game mode button">
+    </div>
+  </section>
+
+  <section id="compare">
+    <div class="wrap">
+      <h2>SetWhichGPU vs. Windows Settings</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Windows Settings</th><th scope="col">SetWhichGPU</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Set GPU per app</th><td class="yes">Yes</td><td class="yes">Yes, one hotkey away</td></tr>
+            <tr><th scope="row">Pick one specific GPU</th><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><th scope="row">Shows the GPU the app really uses</th><td class="no">No</td><td class="yes">Yes, measured live</td></tr>
+            <tr><th scope="row">Detects apps that ignore the preference</th><td class="no">No</td><td class="yes">Yes</td></tr>
+            <tr><th scope="row">Says when a restart is needed</th><td class="no">No</td><td class="yes">Yes</td></tr>
+            <tr><th scope="row">Load, VRAM, temperature, power</th><td class="no">No</td><td class="yes">Yes</td></tr>
+            <tr><th scope="row">Undo all changes at once</th><td class="no">No</td><td class="yes">Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="limits">
+    <div class="wrap two">
+      <div>
+        <h2>What it can't do – honestly</h2>
+        <ul>
+          <li>Apps that <b>choose their GPU themselves</b> (many games, Blender Cycles' render device, CUDA and AI tools) ignore the Windows preference. SetWhichGPU tells you so instead of pretending.</li>
+          <li>No overlay in <b>exclusive fullscreen</b>; you get a tray notification instead.</li>
+          <li>The “specific GPU” option uses the same undocumented format as Windows Settings; a future Windows update could change it.</li>
+          <li>Two <b>identical</b> GPUs cannot be told apart by Windows.</li>
+          <li>Temperature and power are available for NVIDIA and Intel Arc; AMD telemetry is planned.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Optional game mode</h3>
+        <p>For a game that insists on the wrong GPU, game mode can temporarily <b>disable</b> that GPU while you play and enables it again as soon as the game exits – also after a timeout, from the tray, and on the next start after a crash. It never touches the GPU your monitors are connected to, asks for administrator rights once per session, and is off unless you start it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Install</h2>
+      <p>SetWhichGPU is in early development. Until installers are available, run it from source with Python&nbsp;3.13 and <a href="https://docs.astral.sh/uv/">uv</a>:</p>
+<pre><code>git clone https://github.com/Mastertoken/SetWhichGPU.git
+cd SetWhichGPU
+uv sync
+uv run python -m gpucc</code></pre>
+      <p class="small">Requires Windows 11. Language follows Windows (English, German, Spanish, French) and can be changed in the tray menu.</p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Frequently asked questions</h2>
+      <details>
+        <summary>How do I make an app use a specific GPU on Windows 11?</summary>
+        <p>Windows stores a graphics preference per program. SetWhichGPU sets it for you: press Ctrl+Alt+G over the app (or pick it from the application list), choose the graphics card and apply. It takes effect the next time the app starts. Besides power saving and high performance you can pick one specific GPU, which matters on PCs with three or more GPUs.</p>
+      </details>
+      <details>
+        <summary>How can I see which GPU a program is actually using?</summary>
+        <p>SetWhichGPU measures the GPU engines and video memory each process uses (Windows performance counters, plus NVML for NVIDIA and IGCL for Intel Arc) and shows the measured GPU next to the stored preference, with load, VRAM, temperature and power per GPU.</p>
+      </details>
+      <details>
+        <summary>Why does my game ignore the Windows GPU preference?</summary>
+        <p>Some applications enumerate all GPUs and choose one themselves, for example many games, Blender Cycles and CUDA or AI tools. Windows cannot override that. SetWhichGPU detects and reports it instead of showing a misleading success. For games it offers an optional game mode that temporarily disables the unwanted GPU while you play and enables it again afterwards.</p>
+      </details>
+      <details>
+        <summary>Does SetWhichGPU need administrator rights or change drivers?</summary>
+        <p>No. It only writes the per-user graphics preference that Windows Settings also uses, logs every change first and can undo all changes from the tray menu. It never modifies drivers, never injects into other processes and sends no telemetry. Only the optional game mode asks for administrator rights, once, to disable and re-enable a device.</p>
+      </details>
+      <details>
+        <summary>Does it work on laptops with integrated and dedicated graphics?</summary>
+        <p>Yes, it works with any GPUs Windows exposes as separate adapters: integrated plus dedicated graphics in laptops, desktops with several graphics cards, NVIDIA, AMD and Intel Arc. Two identical GPUs of the same model cannot be told apart by Windows, so selection is disabled in that case.</p>
+      </details>
+      <details>
+        <summary>Is SetWhichGPU free?</summary>
+        <p>Yes. SetWhichGPU is free and open source under the MIT license. The source code is on <a href="https://github.com/Mastertoken/SetWhichGPU">GitHub</a>.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>SetWhichGPU · <a href="https://github.com/Mastertoken/SetWhichGPU">Source code</a> · <a href="https://github.com/Mastertoken/SetWhichGPU/issues">Report a bug</a> · <a href="https://github.com/Mastertoken/SetWhichGPU/blob/main/LICENSE">MIT license</a></p>
+    <p>NVIDIA, GeForce, Intel, Arc, AMD, Radeon, Windows, Steam, Epic Games, GOG and Blender are trademarks of their respective owners. This project is not affiliated with or endorsed by any of them.</p>
+  </div>
+</footer>
+</body>
+</html>
