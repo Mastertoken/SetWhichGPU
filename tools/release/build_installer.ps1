@@ -14,7 +14,10 @@
 .EXAMPLE
   .\tools\release\build_installer.ps1
 #>
-param([switch]$SkipChecks)
+param(
+    [switch]$SkipChecks,
+    [string]$Iscc  # path to ISCC.exe; default: search PATH and the usual install folders
+)
 $ErrorActionPreference = "Stop"
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 Set-Location $repo
@@ -31,6 +34,7 @@ if (-not $version) { throw "version not found in src\gpucc\__init__.py" }
 Write-Host "SetWhichGPU $version" -ForegroundColor Green
 
 $iscc = @(
+    $Iscc,
     (Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source),
     "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",

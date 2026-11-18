@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/) once it reaches 1.0.
 
+## [Unreleased]
+
+### Added
+- Release workflow: the installer is built by GitHub Actions (manual run or tag `vX.Y.Z`); a tag creates a draft release with the installer and its SHA-256 checksum
+
 ## [0.1.0] – 2026-11-18
 
 First installable release.

@@ -1,0 +1,115 @@
+name: Release
+
+# Builds the Windows installer on GitHub's runners (reproducible, no local machine involved).
+# - Manual run (Actions tab -> Release -> Run workflow): build only, installer as workflow artifact.
+# - Pushing a tag vX.Y.Z: build + DRAFT release with the installer under both names and the checksum.
+#   The draft is reviewed and published by hand.
+# Code signing (planned via SignPath Foundation) will be added between "Build" and "Upload".
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      QT_QPA_PLATFORM: offscreen  # no display on CI runners
+      UV_LINK_MODE: copy
+      INNO_VERSION: "6.7.3"
+      INNO_SHA256: "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      # Actions are pinned to full commit SHAs; Dependabot keeps them up to date.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+
+      - name: Version (must match the tag)
+        id: version
+        shell: pwsh
+        run: |
+          $v = ([regex]::Match((Get-Content src\gpucc\__init__.py -Raw), '__version__ = "([^"]+)"')).Groups[1].Value
+          if (-not $v) { throw "version not found" }
+          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -ne "v$v") {
+            throw "tag $env:GITHUB_REF_NAME does not match __version__ $v"
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Install Inno Setup (pinned version, checksum verified)
+        shell: pwsh
+        run: |
+          $setup = Join-Path $env:RUNNER_TEMP "innosetup-$env:INNO_VERSION.exe"
+          $tag = "is-" + $env:INNO_VERSION.Replace(".", "_")
+          Invoke-WebRequest "https://github.com/jrsoftware/issrc/releases/download/$tag/innosetup-$env:INNO_VERSION.exe" -OutFile $setup
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $env:INNO_SHA256) { throw "Inno Setup checksum mismatch: $hash" }
+          $dir = Join-Path $env:RUNNER_TEMP "innosetup"
+          $p = Start-Process $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/DIR=`"$dir`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Inno Setup installation failed ($($p.ExitCode))" }
+          "ISCC_PATH=$(Join-Path $dir 'ISCC.exe')" >> $env:GITHUB_ENV
+
+      - name: Build (checks, PyInstaller, smoke test, licenses, Inno Setup)
+        shell: powershell  # the script targets Windows PowerShell 5.1, like on developer machines
+        run: .\tools\release\build_installer.ps1 -Iscc $env:ISCC_PATH
+
+      - name: Upload installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: SetWhichGPU-${{ steps.version.outputs.version }}-setup
+          path: |
+            dist/SetWhichGPU-${{ steps.version.outputs.version }}-setup.exe
+            dist/SetWhichGPU-${{ steps.version.outputs.version }}-setup.exe.sha256
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # create the draft release
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: SetWhichGPU-${{ needs.build.outputs.version }}-setup
+          path: dist
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd dist
+          setup="SetWhichGPU-${VERSION}-setup.exe"
+          sed -i 's/\r$//' "${setup}.sha256"  # written on Windows (CRLF)
+          sha256sum -c "${setup}.sha256"
+          # Fixed name as well: website and README link to releases/latest/download/SetWhichGPU-setup.exe
+          cp "$setup" SetWhichGPU-setup.exe
+          hash=$(cut -d' ' -f1 "${setup}.sha256")
+          cat > notes.md <<EOF
+          **[${setup}](https://github.com/${GH_REPO}/releases/download/${GITHUB_REF_NAME}/${setup})** (Windows 11, 64-bit)
+
+          Built by GitHub Actions: [run ${GITHUB_RUN_ID}](https://github.com/${GH_REPO}/actions/runs/${GITHUB_RUN_ID}).
+          The installer is not code-signed yet, so Windows SmartScreen may warn: *More info → Run anyway*.
+
+          SHA-256 (\`${setup}\`, identical to \`SetWhichGPU-setup.exe\`):
+          \`\`\`
+          ${hash}
+          \`\`\`
+
+          Changes: [CHANGELOG.md](https://github.com/${GH_REPO}/blob/${GITHUB_REF_NAME}/CHANGELOG.md)
+          EOF
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "SetWhichGPU ${VERSION}" --notes-file notes.md \
+            "$setup" SetWhichGPU-setup.exe "${setup}.sha256"
