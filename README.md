@@ -85,6 +85,8 @@ uv run python -m gpucc
 
 Build the installer yourself: `.\tools\release\build_installer.ps1` (needs [Inno Setup 6](https://jrsoftware.org/isinfo.php): `winget install JRSoftware.InnoSetup`). Official installers are built by GitHub Actions ([release workflow](.github/workflows/release.yml)); each release links the run that built it.
 
+**Code signing policy:** free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/) (application pending – releases are unsigned until then). Committers, reviewers and approvers: [Mastertoken](https://github.com/Mastertoken). **Privacy:** this program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
+
 ## FAQ
 
 **How do I make an app use a specific GPU on Windows 11?**
