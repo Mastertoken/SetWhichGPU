@@ -12,6 +12,22 @@ FALLBACK = "#C8CCD2"
 APP_COLOR = "#F2F3F5"  # the selected application's line in the load chart (neutral against every card colour)
 
 
+PANEL_BG = (34, 36, 42)  # approximate overlay background the dimmed colours are mixed towards
+DIM_FACTOR = 0.5
+
+
+def dimmed(color: str, factor: float = DIM_FACTOR) -> str:
+    """Darker shade of ``#RRGGBB`` (mixed towards the background) – an app that only holds GPU memory."""
+    if len(color) != 7 or not color.startswith("#"):
+        return color
+    try:
+        rgb = [int(color[i : i + 2], 16) for i in (1, 3, 5)]
+    except ValueError:
+        return color
+    mixed = (round(c * factor + b * (1 - factor)) for c, b in zip(rgb, PANEL_BG, strict=True))
+    return "#" + "".join(f"{c:02X}" for c in mixed)
+
+
 def gpu_colors(discovery: DiscoveryResult) -> dict[GpuKey, str]:
     """Stable per run: discovery order, vendor colour if still free, otherwise the next extra colour."""
     used: set[str] = set()

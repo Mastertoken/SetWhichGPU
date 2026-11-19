@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from gpucc.core.models import DiscoveryResult, GpuSnapshot, ProcessGpuUsage, TargetApp
 from gpucc.ui.overlay.applist import AppGroup, AppListRow, build_app_list
-from gpucc.ui.overlay.colors import EXTRA_COLORS, VENDOR_COLORS, gpu_colors
+from gpucc.ui.overlay.colors import EXTRA_COLORS, VENDOR_COLORS, dimmed, gpu_colors
 from gpucc.ui.overlay.viewmodel import build_state
 
 
@@ -32,7 +32,15 @@ def test_app_list_rows_take_the_colour_of_the_gpu_they_use(discovery, keys):
         TargetApp(1, 10, r"C:\a\Busy.exe", "Busy", "c"),
         TargetApp(2, 20, r"C:\a\Idle.exe", "Idle", "c"),
     ]
-    snap = GpuSnapshot(0.0, (), (ProcessGpuUsage(10, arc, {"3D": 40.0}, 1 << 30),))
+    snap = GpuSnapshot(
+        0.0,
+        (),
+        (
+            ProcessGpuUsage(10, arc, {"3D": 40.0}, 1 << 30),
+            ProcessGpuUsage(30, arc, {"3D": 0.0}, 1 << 30),  # only holds memory, no load
+        ),
+    )
+    running.append(TargetApp(3, 30, r"C:\a\Resident.exe", "Resident", "c"))
     rows, _ = build_app_list(
         running=running,
         background=[],
@@ -45,6 +53,12 @@ def test_app_list_rows_take_the_colour_of_the_gpu_they_use(discovery, keys):
     )
     color = {r.title: r.color for r in rows}
     assert color["Busy"] == VENDOR_COLORS["intel"] and color["Idle"] == ""
+    assert color["Resident"] == dimmed(VENDOR_COLORS["intel"]) != VENDOR_COLORS["intel"]
+
+
+def test_dimmed_is_darker_and_safe():
+    assert dimmed("#5CB3FF") == "#3F6C94"  # halfway towards the panel background
+    assert dimmed("not a colour") == "not a colour" and dimmed("#ZZZZZZ") == "#ZZZZZZ"
 
 
 def test_app_list_colour_cannot_inject_styles(qtbot):

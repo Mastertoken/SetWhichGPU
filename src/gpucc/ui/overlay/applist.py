@@ -16,7 +16,7 @@ from gpucc.i18n import tr
 from gpucc.library.models import ExeSource, InstalledGame
 from gpucc.library.scanner import game_for_exe
 from gpucc.monitoring.attribution import observe, process_tree
-from gpucc.ui.overlay.colors import gpu_colors
+from gpucc.ui.overlay.colors import dimmed, gpu_colors
 
 #: Windowless processes are listed only above these thresholds.
 BACKGROUND_MIN_RENDER_PCT = 1.0
@@ -137,6 +137,8 @@ def build_app_list(
             if obs.confidence is not Confidence.NONE and obs.key is not None:
                 activity = obs.per_gpu[0].render_pct if obs.per_gpu else 0.0
                 color = colors.get(obs.key, "")
+                if obs.confidence is not Confidence.HIGH:  # on the GPU, but no load right now → darker shade
+                    color = dimmed(color)
                 load = f" {activity:.0f} %" if obs.confidence is Confidence.HIGH else ""
                 parts.append(tr("uses {gpu}", gpu=f"{_short(discovery, obs.key)}{load}"))
             else:
