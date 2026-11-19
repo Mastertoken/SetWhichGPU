@@ -21,6 +21,7 @@ from gpucc.core.models import (
     TargetApp,
 )
 from gpucc.i18n import decimal_separator, tr
+from gpucc.localai.runtimes import ModelReport
 
 
 class Level(StrEnum):
@@ -74,6 +75,8 @@ class OverlayState:
     default_label: str = ""
     gamemode_gpu: GpuKey | None = None  # offer: disable this GPU while the game runs (ADR-0002)
     gamemode_label: str = ""
+    ai_title: str = ""  # "Loaded models (Ollama)" – empty: section hidden (ADR-0003)
+    ai_lines: tuple[str, ...] = ()
 
 
 GIB = 1 << 30
@@ -134,6 +137,9 @@ def build_state(
     target_running: bool = True,
     last_change_at: float | None = None,
     gamemode_note: str | None = None,
+    ai_runtime: str | None = None,
+    ai_enabled: bool = False,
+    ai_report: ModelReport | None = None,
 ) -> OverlayState:
     notes: list[str] = []
     observed_key = observed.key if observed and observed.confidence is not Confidence.NONE else None
@@ -235,6 +241,17 @@ def build_state(
         for s in (observed.per_gpu if observed else ())
     )
 
+    ai_title, ai_lines = "", tuple[str, ...]()
+    if ai_runtime and target.running:
+        if ai_enabled:
+            ai_title = tr("LOADED AI MODELS ({runtime})", runtime=ai_runtime).upper()
+            report = ai_report if ai_report is not None and ai_report.runtime == ai_runtime else None
+            ai_lines = model_lines(report, observed, discovery)
+        else:
+            notes.append(
+                tr("{runtime}: loaded models can be shown – tray menu → Show loaded AI models", runtime=ai_runtime)
+            )
+
     offer = None if gamemode_note else gamemode_offer(target, preferred, observed, last_change_at, discovery)
     if gamemode_note:
         notes.append(gamemode_note)
@@ -278,7 +295,53 @@ def build_state(
         default_label=tr("Windows default  (decides itself: {gpu})", gpu=default_name),
         gamemode_gpu=offer,
         gamemode_label=tr("🎮 Game mode: disable {gpu} while playing …", gpu=_name(discovery, offer)) if offer else "",
+        ai_title=ai_title,
+        ai_lines=ai_lines,
     )
+
+
+def model_lines(
+    report: ModelReport | None, observed: ObservedGpu | None, discovery: DiscoveryResult
+) -> tuple[str, ...]:
+    """Loaded models plus *measured* GPU placement. The runtimes don't say which GPU – we measure it."""
+    if report is None:
+        return (tr("Asking the runtime …"),)
+    if not report.reachable:
+        if report.problem == "unauthorized":
+            return (tr("The local API requires an API token – not supported."),)
+        if report.runtime == "LM Studio":
+            return (
+                tr(
+                    "LM Studio API not reachable (port {port}) – start the local server in LM Studio.", port=report.port
+                ),
+            )
+        return (tr("{runtime} API not reachable (port {port}).", runtime=report.runtime, port=report.port),)
+    if not report.models:
+        return (tr("No model loaded"),)
+
+    gpus = [s for s in (observed.per_gpu if observed else ()) if s.dedicated_bytes or s.render_pct]
+    lines = []
+    for m in report.models:
+        parts = [f"{m.name} ×{m.instances}" if m.instances > 1 else m.name]
+        if m.detail:
+            parts.append(m.detail)
+        if m.size_bytes:
+            parts.append(fmt_bytes_short(m.size_bytes))
+        if m.vram_bytes is not None and m.size_bytes:
+            gpu_pct = round(100 * min(m.vram_bytes, m.size_bytes) / m.size_bytes)
+            if gpu_pct == 0:
+                parts.append(tr("CPU only"))
+            elif gpu_pct < 100:
+                parts.append(tr("{gpu} % GPU / {cpu} % CPU", gpu=gpu_pct, cpu=100 - gpu_pct))
+        lines.append(" · ".join(parts))
+    if len(gpus) == 1:
+        lines.append(tr("Runs on {gpu} (measured)", gpu=_name(discovery, gpus[0].key)))
+    elif len(gpus) > 1:
+        split = ", ".join(f"{_name(discovery, s.key)} {fmt_bytes_short(s.dedicated_bytes)}" for s in gpus)
+        lines.append(tr("Spread over several GPUs (measured): {split}", split=split))
+    else:
+        lines.append(tr("No GPU usage measured right now"))
+    return tuple(lines)
 
 
 def gamemode_offer(

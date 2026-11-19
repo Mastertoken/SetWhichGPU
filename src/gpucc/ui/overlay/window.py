@@ -564,6 +564,14 @@ class OverlayWindow(QWidget):
         self.gamemode_button.clicked.connect(self._on_gamemode_clicked)
         root.addWidget(self.gamemode_button)
 
+        # Loaded models of local AI runtimes (ADR-0003). Their names come from other programs → plain text only.
+        self.ai_header = _label(name="section")
+        self.ai_label = _label(wrap=True)
+        self.ai_label.setTextFormat(Qt.TextFormat.PlainText)
+        for w in (self.ai_header, self.ai_label):
+            w.setVisible(False)
+            root.addWidget(w)
+
         root.addWidget(_sep())
         self.cards_header = _label(tr("GRAPHICS CARDS"), "section")
         root.addWidget(self.cards_header)
@@ -674,6 +682,11 @@ class OverlayWindow(QWidget):
         self.status_block.setVisible(state.has_target)
         self.gamemode_button.setVisible(state.gamemode_gpu is not None)
         self.gamemode_button.setText(state.gamemode_label)
+        show_ai = state.has_target and bool(state.ai_title)
+        self.ai_header.setText(state.ai_title)
+        self.ai_label.setText("\n".join(state.ai_lines))
+        self.ai_header.setVisible(show_ai)
+        self.ai_label.setVisible(show_ai)
         for lbl, text, level in (
             (self.observed, state.observed_text, state.observed_level),
             (self.preferred, state.preferred_text, state.preferred_level),

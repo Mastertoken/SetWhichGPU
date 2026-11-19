@@ -41,7 +41,8 @@ Windows-11-Tray-Anwendung (Python 3.13, PySide6), die per globalem Hotkey ein Ov
 - `DirectXUserGlobalSettings` (globale Standard-GPU) nie automatisch ändern.
 - Keine systemweiten Umgebungsvariablen setzen; Compute-Geräteauswahl nur über Launch-Profile.
 - Lokale API (Phase 5): nur Loopback/Named Pipe, Token-Auth, schreibende Aktionen benötigen Benutzerfreigabe.
-- Keine Telemetrie-/Netzwerkverbindungen nach außen.
+- Keine Telemetrie-/Netzwerkverbindungen nach außen. Einzige Netzwerkfunktion: die optionale, standardmäßig
+  ausgeschaltete Abfrage lokaler KI-Laufzeiten nur über Loopback (ADR-0003, `gpucc.localai`).
 - **Keine persönlichen Daten im Repo:** keine Benutzernamen, E-Mail-Adressen, Benutzerpfade, Projektnamen oder gerätespezifischen Kennungen (PnP-Instanz-IDs, GPU-UUIDs, Steam-IDs) in Code, Tests, Fixtures oder Doku. Fixtures anonymisieren (Modellkennungen VEN/DEV/SUBSYS sind erlaubt). Öffentliche Releases nur über `tools/release/export_public.ps1` (Datenschutz-Scan + frische Historie).
 - Bei Tests auf dem echten System: **keine** Schreibtests gegen die echte Registry. Registry-Zugriffe in Tests über Fake oder einen eigenen Test-Unterschlüssel (`HKCU\Software\SetWhichGPUTest`), der im Teardown gelöscht wird.
 

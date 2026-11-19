@@ -235,4 +235,25 @@ CATALOG: dict[str, str] = {
         "{gpu} est encore désactivé suite à une session de mode jeu précédente ({app}). Le réactiver maintenant ?\n\n"
         "Sinon : Gestionnaire de périphériques → Cartes graphiques → {gpu} → Activer le périphérique."
     ),
+    "LOADED AI MODELS ({runtime})": "MODÈLES D'IA CHARGÉS ({runtime})",
+    "{runtime}: loaded models can be shown – tray menu → Show loaded AI models": (
+        "{runtime} : les modèles chargés peuvent être affichés – menu de la zone de notification → Afficher "
+        "les modèles d'IA chargés"
+    ),
+    "Asking the runtime …": "Interrogation de l'environnement …",
+    "The local API requires an API token – not supported.": "L'API locale exige un jeton – non pris en charge.",
+    "LM Studio API not reachable (port {port}) – start the local server in LM Studio.": (
+        "API de LM Studio injoignable (port {port}) – démarrez le serveur local dans LM Studio."
+    ),
+    "{runtime} API not reachable (port {port}).": "API de {runtime} injoignable (port {port}).",
+    "No model loaded": "Aucun modèle chargé",
+    "CPU only": "CPU uniquement",
+    "{gpu} % GPU / {cpu} % CPU": "{gpu} % GPU / {cpu} % CPU",
+    "Runs on {gpu} (measured)": "Tourne sur {gpu} (mesuré)",
+    "Spread over several GPUs (measured): {split}": "Réparti sur plusieurs GPU (mesuré) : {split}",
+    "No GPU usage measured right now": "Aucune utilisation GPU mesurée pour le moment",
+    "Show loaded AI models (Ollama, LM Studio)": "Afficher les modèles d'IA chargés (Ollama, LM Studio)",
+    "Asks Ollama and LM Studio on this PC (localhost only) which models are loaded": (
+        "Demande à Ollama et LM Studio sur ce PC (localhost uniquement) quels modèles sont chargés"
+    ),
 }

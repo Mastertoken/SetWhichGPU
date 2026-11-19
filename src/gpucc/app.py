@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from gpucc.assignment.service import AssignmentService
 from gpucc.assignment.support import support_for
 from gpucc.assignment.win_pref import interpret
-from gpucc.branding import APP_NAME, LANGUAGE_SETTING, RESTART_FLAG
+from gpucc.branding import APP_NAME, LANGUAGE_SETTING, LOCALAI_SETTING, RESTART_FLAG
 from gpucc.core.hotkey import DEFAULT_HOTKEY, Hotkey, parse_hotkey
 from gpucc.core.models import (
     DiscoveryResult,
@@ -32,6 +32,8 @@ from gpucc.i18n import SYSTEM, language, resolve_language, tr
 from gpucc.launch import self_command, self_command_line
 from gpucc.library.scanner import learn_render_exes
 from gpucc.library.service import LibraryService
+from gpucc.localai.runtimes import ModelReport, runtime_for
+from gpucc.localai.worker import LocalAiThread
 from gpucc.monitoring.attribution import observe
 from gpucc.monitoring.sampler import Sampler
 from gpucc.monitoring.worker import INTERVAL_ACTIVE_MS, INTERVAL_IDLE_MS, MonitoringThread
@@ -50,6 +52,7 @@ HISTORY_LENGTH = 5
 TREE_REFRESH_EVERY = 5  # snapshots
 FOLLOW_DEBOUNCE_MS = 200
 LIST_REFRESH_EVERY = 3  # snapshots (~3 s while the overlay is open)
+LOCALAI_EVERY = 3  # snapshots (~3 s) between "loaded models" queries while such a runtime is shown
 LEARNED_PREFIX = "learned_exe:"
 LEARN_MIN_VRAM = 64 << 20  # a process counts as "using the GPU" from this much dedicated memory
 ERROR_HOTKEY_ALREADY_REGISTERED = 1409
@@ -157,6 +160,12 @@ class Controller(QObject):
         self._last_foreground_hwnd = 0
         self._app_targets: dict[str, TargetApp] = {}
         self._snapshots_since_list = 0
+        # Local AI runtimes (ADR-0003): opt-in, only queried while the overlay shows such a runtime.
+        self._localai_enabled = store.get_setting(LOCALAI_SETTING) == "1"
+        self._ai_report: ModelReport | None = None
+        self._snapshots_since_ai = 0
+        self.localai = LocalAiThread()
+        self.localai.report_ready.connect(self._on_ai_report)
 
         self.library = LibraryService(lambda: self._store.settings_with_prefix(LEARNED_PREFIX))
         self.library.games_ready.connect(self._on_games_ready)
@@ -178,8 +187,10 @@ class Controller(QObject):
             str(hotkey),
             autostart_available=autostart is not None,
             language=store.get_setting(LANGUAGE_SETTING, SYSTEM) or SYSTEM,
+            localai=self._localai_enabled,
         )
         self.tray.language_chosen.connect(self.set_language_choice)
+        self.tray.localai_toggled.connect(self.set_localai)
         self.tray.open_overlay.connect(self.open_overlay)
         self.tray.rescan.connect(self.rescan)
         self.tray.rescan.connect(self.rescan_library)
@@ -234,6 +245,7 @@ class Controller(QObject):
         self.overlay.hide()
         self.tray.hide()
         self.monitoring.shutdown()
+        self.localai.shutdown()
         self._store.close()
         self._app.quit()
 
@@ -248,6 +260,36 @@ class Controller(QObject):
             self.tray.notify(APP_NAME, tr("The new language is used after the next start."))
             return
         self.restart()
+
+    def set_localai(self, enabled: bool) -> None:
+        self._localai_enabled = enabled
+        self._store.set_setting(LOCALAI_SETTING, "1" if enabled else "")
+        log.info("local AI models", extra={"fields": {"enabled": enabled}})
+        self._ai_report = None
+        if self.overlay.isVisible():
+            self._query_localai(force=True)
+            self._render()
+
+    def _ai_runtime(self) -> str | None:
+        t = self._target
+        runtime = runtime_for(t.exe_name) if t is not None and t.running and t.exe_path else None
+        return runtime.name if runtime else None
+
+    def _query_localai(self, force: bool = False) -> None:
+        """Only while enabled, the overlay is open and its target *is* Ollama / LM Studio."""
+        runtime = self._ai_runtime()
+        if not (self._localai_enabled and runtime):
+            return
+        self._snapshots_since_ai += 1
+        if force or self._snapshots_since_ai >= LOCALAI_EVERY:
+            self._snapshots_since_ai = 0
+            self.localai.request(runtime)
+
+    def _on_ai_report(self, report: object) -> None:
+        if isinstance(report, ModelReport):
+            self._ai_report = report
+            if self.overlay.isVisible():
+                self._render()
 
     def restart(self) -> None:
         import subprocess
@@ -420,6 +462,10 @@ class Controller(QObject):
         raw = self._preferences.read(target.exe_path) if target and target.exe_path else None
         self._preferred = interpret(raw, self._discovery) if target else None
         self._last_change_at = self._assignment.last_change_at(target.exe_path) if target and target.exe_path else None
+        runtime = self._ai_runtime()
+        if self._ai_report is not None and self._ai_report.runtime != runtime:
+            self._ai_report = None  # never show another runtime's answer
+        self._query_localai(force=True)
 
     # ------------------------------------------------------------------ assignment
     def apply_choice(self, choice: object) -> None:
@@ -599,6 +645,9 @@ class Controller(QObject):
             target_running=self._target_alive(),
             last_change_at=self._last_change_at,
             gamemode_note=self._gamemode_note(),
+            ai_runtime=self._ai_runtime(),
+            ai_enabled=self._localai_enabled,
+            ai_report=self._ai_report,
         )
         self.overlay.apply_state(state)
 
@@ -607,6 +656,7 @@ class Controller(QObject):
             self._history.append(snapshot)
             if self.overlay.isVisible():
                 self._refresh_process_tree()
+                self._query_localai()
                 self._render()
                 self._snapshots_since_list += 1
                 if self._snapshots_since_list >= LIST_REFRESH_EVERY:

@@ -43,14 +43,18 @@ class TrayService(QObject):
     quit_requested = Signal()
     gamemode_stop = Signal()
     language_chosen = Signal(str)  # "system" or a code from gpucc.i18n.SUPPORTED
+    localai_toggled = Signal(bool)
 
-    def __init__(self, hotkey_text: str, autostart_available: bool = True, language: str = "system") -> None:
+    def __init__(
+        self, hotkey_text: str, autostart_available: bool = True, language: str = "system", localai: bool = False
+    ) -> None:
         super().__init__()
         from gpucc.ui.icons import app_icon
 
         self.tray = QSystemTrayIcon(app_icon())
         self.tray.setToolTip(f"{APP_NAME} – {hotkey_text}")
         self._menu = QMenu()
+        self._menu.setToolTipsVisible(True)
         self._open = QAction(f"{tr('Open overlay')}\t{hotkey_text}")
         self._open.triggered.connect(self.open_overlay)
         self._rescan = QAction(tr("Rescan graphics cards and games"))
@@ -59,6 +63,11 @@ class TrayService(QObject):
         self._autostart.setCheckable(True)
         self._autostart.setEnabled(autostart_available)
         self._autostart.toggled.connect(self.autostart_toggled)
+        self._localai = QAction(tr("Show loaded AI models (Ollama, LM Studio)"))
+        self._localai.setToolTip(tr("Asks Ollama and LM Studio on this PC (localhost only) which models are loaded"))
+        self._localai.setCheckable(True)
+        self._localai.setChecked(localai)
+        self._localai.toggled.connect(self.localai_toggled)
         self._revert = QAction(tr("Reset GPU preferences …"))
         self._revert.triggered.connect(self.revert_requested)
         self._logs = QAction(tr("Open log folder"))
@@ -72,6 +81,7 @@ class TrayService(QObject):
             self._menu.addAction(a)
         self._menu.addSeparator()
         self._menu.addAction(self._autostart)
+        self._menu.addAction(self._localai)
         self._language_menu = self._menu.addMenu(tr("Language"))
         self._language_group = QActionGroup(self)
         self._language_actions: dict[str, QAction] = {}

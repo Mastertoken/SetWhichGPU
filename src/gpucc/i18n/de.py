@@ -37,14 +37,18 @@ CATALOG: dict[str, str] = {
         "Anwendung wurde beendet – Werte zeigen nur noch den letzten Stand."
     ),
     "Protected process – path and details not readable.": "Prozess geschützt – Pfad und Details nicht lesbar.",
-    "Store app detected (resolved via ApplicationFrameHost).": "Store-App erkannt (über ApplicationFrameHost aufgelöst).",
+    "Store app detected (resolved via ApplicationFrameHost).": (
+        "Store-App erkannt (über ApplicationFrameHost aufgelöst)."
+    ),
     "Background process without a window.": "Hintergrundprozess ohne Fenster.",
     "not running": "läuft nicht",
     "Windows default  (decides itself: {gpu})": "Windows-Standard  (entscheidet selbst: {gpu})",
     # --- overlay: status
     "Preference has no effect – preferred GPU is missing": "Präferenz wirkungslos – bevorzugte GPU fehlt",
     "GPU preference active": "GPU-Präferenz aktiv",
-    "Saved – restart {app} to use the new GPU": "Gespeichert – Neustart von {app} nötig, damit die neue GPU genutzt wird",
+    "Saved – restart {app} to use the new GPU": (
+        "Gespeichert – Neustart von {app} nötig, damit die neue GPU genutzt wird"
+    ),
     (
         "{app} uses a different GPU despite the preference – the application apparently picks its GPU "
         "itself. Cannot be forced via Windows; only a GPU option inside the application helps."
@@ -215,7 +219,9 @@ CATALOG: dict[str, str] = {
     ),
     "End game mode – re-enable {gpu}": "Spielmodus beenden – {gpu} wieder aktivieren",
     "Game mode: waiting for the administrator prompt …": "Spielmodus: warte auf die Administrator-Abfrage …",
-    "Game mode: close {app} – then {gpu} will be disabled.": "Spielmodus: Beende {app} – danach wird {gpu} deaktiviert.",
+    "Game mode: close {app} – then {gpu} will be disabled.": (
+        "Spielmodus: Beende {app} – danach wird {gpu} deaktiviert."
+    ),
     "Game mode: {gpu} is disabled – start {app} now.": "Spielmodus: {gpu} ist deaktiviert – starte jetzt {app}.",
     "Game mode active: {gpu} is disabled until {app} exits.": (
         "Spielmodus aktiv: {gpu} ist deaktiviert, bis {app} beendet wird."
@@ -227,5 +233,27 @@ CATALOG: dict[str, str] = {
     ): (
         "{gpu} ist von einer früheren Spielmodus-Sitzung ({app}) noch deaktiviert. Jetzt wieder aktivieren?\n\n"
         "Alternativ: Geräte-Manager → Grafikkarten → {gpu} → Gerät aktivieren."
+    ),
+    "LOADED AI MODELS ({runtime})": "GELADENE KI-MODELLE ({runtime})",
+    "{runtime}: loaded models can be shown – tray menu → Show loaded AI models": (
+        "{runtime}: geladene Modelle können angezeigt werden – Tray-Menü → Geladene KI-Modelle anzeigen"
+    ),
+    "Asking the runtime …": "Frage die Laufzeit ab …",
+    "The local API requires an API token – not supported.": (
+        "Die lokale API verlangt ein API-Token – nicht unterstützt."
+    ),
+    "LM Studio API not reachable (port {port}) – start the local server in LM Studio.": (
+        "LM-Studio-API nicht erreichbar (Port {port}) – lokalen Server in LM Studio starten."
+    ),
+    "{runtime} API not reachable (port {port}).": "{runtime}-API nicht erreichbar (Port {port}).",
+    "No model loaded": "Kein Modell geladen",
+    "CPU only": "nur CPU",
+    "{gpu} % GPU / {cpu} % CPU": "{gpu} % GPU / {cpu} % CPU",
+    "Runs on {gpu} (measured)": "Läuft auf {gpu} (gemessen)",
+    "Spread over several GPUs (measured): {split}": "Auf mehrere GPUs verteilt (gemessen): {split}",
+    "No GPU usage measured right now": "Gerade keine GPU-Nutzung gemessen",
+    "Show loaded AI models (Ollama, LM Studio)": "Geladene KI-Modelle anzeigen (Ollama, LM Studio)",
+    "Asks Ollama and LM Studio on this PC (localhost only) which models are loaded": (
+        "Fragt Ollama und LM Studio auf diesem PC (nur localhost), welche Modelle geladen sind"
     ),
 }

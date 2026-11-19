@@ -32,6 +32,21 @@ def test_render_and_escape(qtbot, discovery, keys):
     assert reasons == ["escape"] and not w.isVisible()
 
 
+def test_loaded_ai_models_section_is_plain_text(qtbot, discovery):
+    from gpucc.localai.runtimes import LoadedModel, ModelReport
+
+    w = OverlayWindow()
+    qtbot.addWidget(w)
+    target = TargetApp(0, 7, r"C:\x\ollama.exe", "", "")
+    common = dict(target=target, discovery=discovery, snapshot=None, observed=None, preferred=None, hotkey_text="")
+    report = ModelReport("Ollama", True, (LoadedModel("<b>bold</b>"),))
+    w.apply_state(build_state(**common, ai_runtime="Ollama", ai_enabled=True, ai_report=report))
+    assert not w.ai_header.isHidden() and w.ai_header.text() == "GELADENE KI-MODELLE (OLLAMA)"
+    assert w.ai_label.textFormat() == Qt.TextFormat.PlainText and "<b>bold</b>" in w.ai_label.text()
+    w.apply_state(build_state(**common, ai_runtime="Ollama", ai_enabled=False))
+    assert w.ai_header.isHidden() and w.ai_label.isHidden()
+
+
 def test_process_section_toggles_on_click_and_p(qtbot, discovery, keys):
     w = OverlayWindow()
     qtbot.addWidget(w)

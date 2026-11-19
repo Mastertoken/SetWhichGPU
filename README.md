@@ -28,6 +28,7 @@ SetWhichGPU is a free, open-source tray app for Windows 11. Press **`Ctrl+Alt+G`
 - **Application list**: running apps, background GPU processes, saved preferences, installed programs and Steam, Epic and GOG games – set the GPU *before* starting an app
 - **Pin mode**: the overlay stays visible and follows the active application
 - **Optional game mode** for games that ignore the Windows preference (see below)
+- **Local AI models** (optional, off by default): shows which models **Ollama** and **LM Studio** have loaded next to the measured GPU (asks their API on `127.0.0.1` only; tray menu → *Show loaded AI models*)
 - **Journaled and reversible**: every registry change is logged first and can be undone from the tray menu
 - **English, German, Spanish and French** UI (follows Windows, switchable in the tray menu)
 
@@ -49,7 +50,7 @@ Please read this before filing a bug – most "it doesn't work" cases are Window
 | ⚠️ | Two **identical** GPUs (same model and board vendor) cannot be told apart by Windows; selection is disabled in that case |
 | ℹ️ | Temperature/power: NVIDIA (NVML) and Intel Arc (IGCL). AMD telemetry is not implemented yet |
 
-SetWhichGPU never modifies drivers, never injects into other processes and sends no telemetry.
+SetWhichGPU never modifies drivers, never injects into other processes and sends no telemetry. Its only network access is the optional local-AI feature, which talks to Ollama/LM Studio on `127.0.0.1` only ([ADR-0003](docs/adr/0003-lokale-ki-modelle-anzeigen.md), German).
 
 ### Game mode (optional)
 
@@ -100,6 +101,9 @@ It chooses its GPU itself; Windows cannot override that. SetWhichGPU says so ins
 
 **Does it work on laptops (iGPU + dGPU) and with AMD?**
 Yes – with any GPUs Windows exposes as separate adapters. AMD telemetry (temperature/power) is not implemented yet; load and VRAM work.
+
+**Which GPU does my local AI model (Ollama, LM Studio, ComfyUI) run on?**
+Open the overlay on the tool (its server processes are under *Background GPU processes* in the application list): it shows the measured GPU, VRAM and the split across several GPUs. With *Show loaded AI models* enabled, Ollama and LM Studio models are listed by name, including the GPU/CPU split. These tools pick their GPU themselves – choose it in the tool (e.g. `CUDA_VISIBLE_DEVICES`).
 
 ## Development
 
