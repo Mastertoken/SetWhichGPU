@@ -310,6 +310,64 @@ def _free_port():
         return s.getsockname()[1]
 
 
+# ----------------------------------------------------------------------------- hostile answers
+# Any local program can listen on these ports, so the answers are attacker-controlled input.
+
+
+def test_deeply_nested_json_is_rejected_not_crashing(server):
+    port = serve(server, {"/api/ps": (200, b"[" * 200_000 + b"]" * 200_000)})
+    assert client.query(OLLAMA, [port]).problem in ("invalid", "unreachable")
+
+
+def test_oversized_answer_is_rejected(server):
+    port = serve(server, {"/api/ps": (200, b'{"models": [' + b" " * (client.MAX_ANSWER_BYTES + 10) + b"]}")})
+    assert client.query(OLLAMA, [port]).problem == "invalid"
+
+
+def test_trickling_server_hits_the_total_deadline(monkeypatch):
+    import socket
+    import time
+
+    monkeypatch.setattr(client, "TOTAL_DEADLINE_S", 0.3)
+    srv = socket.socket()
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+
+    def trickle():
+        conn, _ = srv.accept()
+        conn.recv(4096)
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n")
+        try:
+            for _ in range(40):  # one byte every 50 ms – each read is "fast", the whole answer is not
+                conn.sendall(b" ")
+                time.sleep(0.05)
+        except OSError:
+            pass
+        conn.close()
+
+    t = threading.Thread(target=trickle, daemon=True)
+    t.start()
+    start = time.monotonic()
+    with pytest.raises(TimeoutError):
+        client.fetch_json("127.0.0.1", port, "/api/ps")
+    assert time.monotonic() - start < 1.5
+    srv.close()
+
+
+def test_names_cannot_inject_markup_or_disguise_themselves():
+    data = {"models": [{"name": "<img src=x onerror=alert(1)>\u202egnp.exe\u200b\r\nSECOND LINE", "size": 1}]}
+    (m,) = parse_ollama_ps(data)
+    assert "\u202e" not in m.name and "\u200b" not in m.name and "\n" not in m.name and "\r" not in m.name
+    assert m.name.startswith("<img")  # kept as text – the overlay renders it as plain text, never as HTML
+
+
+def test_only_known_paths_and_valid_ports():
+    for args in [("127.0.0.1", 11434, "/admin"), ("127.0.0.1", 0, "/api/ps"), ("127.0.0.1", 70000, "/api/ps")]:
+        with pytest.raises(ValueError):
+            client.fetch_json(*args)
+
+
 def test_only_loopback_hosts():
     with pytest.raises(ValueError):
         client.fetch_json("192.168.0.10", 11434, "/api/ps")

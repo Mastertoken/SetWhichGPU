@@ -5,9 +5,10 @@ from gpucc.core.models import (
     GpuTelemetry,
     ObservedGpu,
     ProcessGpuSummary,
+    ProcessGpuUsage,
     TargetApp,
 )
-from gpucc.ui.overlay.viewmodel import Level, build_state, de, fmt_vram
+from gpucc.ui.overlay.viewmodel import Level, build_state, de, fmt_vram, load_series
 
 GIB = 1 << 30
 MIB = 1 << 20
@@ -40,6 +41,41 @@ def snapshot(discovery):
     return GpuSnapshot(0, gpus, ())
 
 
+def test_load_chart_separates_whole_gpu_and_app(discovery, keys):
+    arc, nv = keys["intel"], keys["nvidia"]
+
+    def snap(ts, gpu_load, app_3d, other_3d):
+        gpus = (GpuTelemetry(arc, gpu_load, {}, None, 0, None, None, ("pdh",)),)
+        procs = (
+            ProcessGpuUsage(42, arc, {"3D": app_3d, "Copy": 50.0}, 0),  # Copy is not render load
+            ProcessGpuUsage(7, arc, {"3D": other_3d}, 0),  # another application
+            ProcessGpuUsage(42, nv, {"Compute": 5.0}, 0),
+        )
+        return GpuSnapshot(ts, gpus, procs)
+
+    history = [snap(0.0, 99.0, 1, 1), snap(70.0, 30.0, 10, 20), snap(85.0, 40.0, 15, 25), snap(100.0, 60.0, 20, 40)]
+    total, app = load_series(history, arc, {42})
+    assert total == ((0.0, 30.0), (0.5, 40.0), (1.0, 60.0))  # 30-s window by timestamp: t=0 is dropped
+    assert app == ((0.0, 10.0), (0.5, 15.0), (1.0, 20.0))  # only pid 42, only render engines
+    assert load_series(history, arc, ())[1] == ()
+
+    target = TargetApp(1, 42, r"C:\x\App.exe", "t", "c", file_description="Some App")
+    obs = ObservedGpu(arc, Confidence.HIGH, (ProcessGpuSummary(arc, 20.0, 0, {"3D": 20.0}),))
+    s = build_state(
+        target=target,
+        discovery=discovery,
+        snapshot=history[-1],
+        observed=obs,
+        preferred=None,
+        hotkey_text="",
+        history=history,
+        target_pids={42},
+    )
+    row = next(r for r in s.gpus if r.key == arc)
+    assert row.util_text == "Gesamt 60 %" and row.app_text == "Some App 20 %"
+    assert next(r for r in s.gpus if r.key == keys["amd"]).app_series == ()  # app not on the iGPU
+
+
 def test_formatting():
     assert de(9.84) == "9,8"
     assert fmt_vram(int(9.8 * GIB), 32 * GIB, False) == "9,8 / 32,0 GB"
@@ -62,12 +98,12 @@ def test_unity_preference_active(discovery, keys):
     assert s.title == "Unity Editor"
     assert s.subtitle.startswith("Unity.exe · C:\\Program Files")
     assert s.details == "PID 21780 · Unity Technologies"
-    assert s.observed_text == "Arc Pro B65 · aktiv 41 %"
+    assert s.observed_text == "Arc Pro B65 · diese App 41 % Last"
     assert s.preferred_text == "Arc Pro B65 (Hohe Leistung)"
     assert (s.status_text, s.status_level) == ("GPU-Präferenz aktiv", Level.OK)
     row = next(r for r in s.gpus if r.key == arc)
     assert row.used_by_target and row.preferred
-    assert (row.util_text, row.temp_text, row.power_text) == ("41 %", "63 °C", "88 W")
+    assert (row.util_text, row.temp_text, row.power_text) == ("Gesamt 41 %", "63 °C", "88 W")
     amd = next(r for r in s.gpus if r.key == keys["amd"])
     assert amd.badge == "iGPU" and not amd.used_by_target
     assert s.processes[0].activity_text == "3D 41 %"

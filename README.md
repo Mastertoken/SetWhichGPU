@@ -24,8 +24,8 @@ SetWhichGPU is a free, open-source tray app for Windows 11. Press **`Ctrl+Alt+G`
 - **Measured vs. preferred GPU** side by side – never mixed up
 - **Per-app GPU selection** via the Windows graphics preference: default, power saving, high performance or one **specific GPU** (essential with three or more GPUs)
 - **Honest status**: "active", "restart required" (only if the app was started *before* the change) or "the app picks its GPU itself"
-- **Live GPU monitoring** per GPU (load, VRAM, temperature, power) and per application, including CUDA compute
-- **Application list**: running apps, background GPU processes, saved preferences, installed programs and Steam, Epic and GOG games – set the GPU *before* starting an app
+- **Live GPU monitoring** per GPU (load, VRAM, temperature, power) and per application, including CUDA compute, with a **30-second load chart** per GPU: whole card vs. the selected app
+- **Application list**: running apps, background GPU processes, saved preferences, installed programs and Steam, Epic (incl. the new launcher), GOG and Meta Horizon (VR) games – set the GPU *before* starting an app
 - **Pin mode**: the overlay stays visible and follows the active application
 - **Optional game mode** for games that ignore the Windows preference (see below)
 - **Local AI models**: shows which models **Ollama, LM Studio/Bionic, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI** (A1111, Forge, SD.Next) and **text-generation-webui** have loaded, next to the measured GPU – asked on `127.0.0.1` only, nothing leaves the PC (can be switched off: tray menu → *Show loaded AI models*)
@@ -126,4 +126,4 @@ This project is developed with the help of AI coding agents (Claude Code, Codex 
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) – licenses of dependencies
 - License: [MIT](LICENSE)
 
-NVIDIA, GeForce, Intel, Arc, AMD, Radeon, Windows, Steam, Epic Games, GOG and Blender are trademarks of their respective owners. This project is not affiliated with or endorsed by any of them.
+NVIDIA, GeForce, Intel, Arc, AMD, Radeon, Windows, Steam, Epic Games, GOG, Meta, Oculus, Ollama, LM Studio and Blender are trademarks of their respective owners. This project is not affiliated with or endorsed by any of them.

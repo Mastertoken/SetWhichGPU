@@ -20,7 +20,6 @@ CATALOG: dict[str, str] = {
     "GPU overview": "Vue d'ensemble des GPU",
     "No application in the foreground": "Aucune application au premier plan",
     "No GPU usage detected": "Aucune utilisation du GPU détectée",
-    "{gpu} · active {pct} %": "{gpu} · actif {pct} %",
     "{gpu} · memory in use, currently no load": "{gpu} · mémoire utilisée, aucune charge actuellement",
     "{gpu} · several GPUs, largest memory share": "{gpu} · plusieurs GPU, plus grande part de mémoire",
     "None – Windows decides ({gpu})": "Aucune – Windows décide ({gpu})",
@@ -261,4 +260,18 @@ CATALOG: dict[str, str] = {
         "{runtime} tourne sans API – lancez-le avec {flag} pour voir le modèle."
     ),
     "{runtime} gave an unexpected answer (port {port}).": "{runtime} a donné une réponse inattendue (port {port}).",
+    "{gpu} · this app {pct} % load": "{gpu} · cette app {pct} % de charge",
+    "Total {pct} %": "Total {pct} %",
+    "Load of the whole graphics card – all applications together": (
+        "Charge de toute la carte graphique – toutes les applications ensemble"
+    ),
+    "Last 30 seconds. Blue: whole graphics card (all applications). Pink: the selected application.": (
+        "30 dernières secondes. Bleu : toute la carte graphique (toutes les applications). Rose : "
+        "l'application sélectionnée."
+    ),
+    "Share of the selected application in this graphics card's load": (
+        "Part de l'application sélectionnée dans la charge de cette carte graphique"
+    ),
+    "last 30 s": "30 dernières s",
+    "VR game (Meta Horizon Link)": "Jeu VR (Meta Horizon Link)",
 }

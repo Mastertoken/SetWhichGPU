@@ -16,7 +16,7 @@ class ExeSource(StrEnum):
 class InstalledGame:
     """An installed game (Steam/Epic/GOG) or program (Start Menu)."""
 
-    store: str  # "Steam" | "Epic" | "GOG" | "StartMenu"
+    store: str  # "Steam" | "Epic" | "GOG" | "Meta" | "StartMenu"
     game_id: str
     name: str
     install_dir: str

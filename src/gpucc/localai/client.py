@@ -9,18 +9,21 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Sequence
 from typing import Any
 
-from gpucc.localai.runtimes import LoadedModel, ModelReport, Runtime
+from gpucc.localai.runtimes import RUNTIMES, LoadedModel, ModelReport, Runtime
 
 log = logging.getLogger(__name__)
 
 LOOPBACK = ("127.0.0.1", "[::1]")
-TIMEOUT_S = 1.0
+TIMEOUT_S = 1.0  # connect and each read
+TOTAL_DEADLINE_S = 3.0  # whole answer
 MAX_ANSWER_BYTES = 1 << 20
+_KNOWN_PATHS = frozenset(path for r in RUNTIMES for path, _ in r.endpoints)
 # When several ports fail, report the most informative problem.
 _RANK = {"unreachable": 0, "invalid": 1, "not_found": 2, "unauthorized": 3}
 
@@ -34,16 +37,30 @@ _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedire
 
 
 def fetch_json(host: str, port: int, path: str, timeout: float = TIMEOUT_S) -> object:
+    """GET one JSON document. Whatever listens on the port may be hostile (any local program can open
+    it), so: fixed URL parts only, size cap, total deadline, and parser errors become ValueError."""
     if host not in LOOPBACK:
         raise ValueError("only loopback addresses are allowed")
+    if not (isinstance(port, int) and 0 < port < 65536) or path not in _KNOWN_PATHS:
+        raise ValueError("unexpected port or path")
     request = urllib.request.Request(
         f"http://{host}:{port}{path}", headers={"Accept": "application/json", "User-Agent": "SetWhichGPU"}
     )
+    deadline = time.monotonic() + TOTAL_DEADLINE_S
+    chunks: list[bytes] = []
+    size = 0
     with _OPENER.open(request, timeout=timeout) as response:
-        raw = response.read(MAX_ANSWER_BYTES + 1)
-    if len(raw) > MAX_ANSWER_BYTES:
-        raise ValueError("answer too large")
-    return json.loads(raw)
+        while chunk := response.read1(64 * 1024):  # returns what has arrived; timeout applies per read
+            size += len(chunk)
+            if size > MAX_ANSWER_BYTES:
+                raise ValueError("answer too large")
+            if time.monotonic() > deadline:  # server trickles bytes to keep us busy
+                raise TimeoutError("answer too slow")
+            chunks.append(chunk)
+    try:
+        return json.loads(b"".join(chunks))
+    except RecursionError as e:  # absurdly deep nesting
+        raise ValueError("answer nested too deeply") from e
 
 
 def _ask(runtime: Runtime, host: str, port: int) -> tuple[LoadedModel, ...] | str:

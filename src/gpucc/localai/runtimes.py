@@ -15,9 +15,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from gpucc.sanitize import clean_text
+
 MAX_NAME_LEN = 80
 MAX_MODELS = 16
-_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,10 +104,7 @@ def port_from_config(path: Path, default: int) -> int:
 
 
 def clean(value: object) -> str:
-    if not isinstance(value, str):
-        return ""
-    text = _CONTROL.sub("", value).strip()
-    return text if len(text) <= MAX_NAME_LEN else text[: MAX_NAME_LEN - 1] + "…"
+    return clean_text(value, MAX_NAME_LEN)
 
 
 def _int(value: object) -> int | None:

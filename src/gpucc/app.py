@@ -48,7 +48,7 @@ from gpucc.ui.tray import TrayService
 
 log = logging.getLogger(__name__)
 
-HISTORY_LENGTH = 5
+HISTORY_LENGTH = 40  # ≥ 30 s of 1-s samples for the load charts (attribution uses only the last 3)
 TREE_REFRESH_EVERY = 5  # snapshots
 FOLLOW_DEBOUNCE_MS = 200
 LIST_REFRESH_EVERY = 3  # snapshots (~3 s while the overlay is open)
@@ -649,6 +649,8 @@ class Controller(QObject):
             ai_runtime=self._ai_runtime(),
             ai_enabled=self._localai_enabled,
             ai_report=self._ai_report,
+            history=self._history,
+            target_pids=self._target_pids,
         )
         self.overlay.apply_state(state)
 

@@ -1,4 +1,4 @@
-"""Scan installed games from Steam, Epic and GOG (read-only)."""
+"""Scan installed games from Steam, Epic, GOG and Meta Horizon (read-only); see launchers.py."""
 
 from __future__ import annotations
 
@@ -109,14 +109,24 @@ def _has(key: winreg.HKEYType, name: str) -> bool:
 def scan_all(learned: Mapping[str, str]) -> list[InstalledGame]:
     games: list[InstalledGame] = []
     root = steam_root()
+    from gpucc.library import launchers
+
     scanners: list[tuple[str, Callable[[], list[InstalledGame]]]] = [
         ("steam", lambda: scan_steam(root, learned) if root else []),
         ("epic", lambda: scan_epic(EPIC_MANIFESTS, learned)),
+        ("epic-v2", lambda: launchers.scan_epic_v2(launchers.local_appdata() / launchers.EPIC_V2_DIR_NAME, learned)),
         ("gog", lambda: scan_gog(learned)),
+        ("meta", lambda: launchers.scan_meta(launchers.meta_libraries(), learned)),
     ]
+    seen_dirs: set[str] = set()
     for name, fn in scanners:
         try:
-            games.extend(fn())
+            for game in fn():
+                folder = game.install_dir.lower().rstrip("\\")
+                if folder in seen_dirs:
+                    continue  # e.g. Epic launcher v1 and v2 both know the game
+                seen_dirs.add(folder)
+                games.append(game)
         except Exception:
             log.exception("library scan failed: %s", name)
     apps: list[InstalledGame] = []

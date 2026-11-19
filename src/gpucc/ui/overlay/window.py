@@ -23,10 +23,12 @@ from PySide6.QtGui import (
     QFont,
     QFontMetrics,
     QKeyEvent,
+    QLinearGradient,
     QMouseEvent,
     QPainter,
     QPainterPath,
     QPaintEvent,
+    QPen,
     QScreen,
     QWheelEvent,
 )
@@ -39,7 +41,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QProgressBar,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -194,12 +195,64 @@ class _DefaultCard(_SelectableCard):
         lay.addWidget(self.text, 1)
 
 
+TOTAL_COLOR = "#7A86FF"  # whole GPU
+APP_COLOR = "#E0559A"  # selected application
+CHART_HEIGHT = 40
+
+
+class _LoadChart(QWidget):
+    """Load over the last 30 s as lines with a fading area below (whole GPU + selected app)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setFixedHeight(CHART_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._series: list[tuple[tuple[tuple[float, float], ...], str]] = []
+
+    def set_series(self, total: Sequence[tuple[float, float]], app: Sequence[tuple[float, float]]) -> None:
+        self._series = [(tuple(total), TOTAL_COLOR), (tuple(app), APP_COLOR)]
+        self.update()
+
+    def paintEvent(self, _event: QPaintEvent) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = float(self.width()), float(self.height())
+        top, bottom = 2.0, h - 1.5
+        p.setPen(QPen(QColor(255, 255, 255, 22), 1))
+        p.drawLine(0, int(bottom), int(w), int(bottom))  # baseline
+        for points, color in self._series:
+            if len(points) < 2:
+                continue
+            line = QPainterPath()
+            for i, (x, v) in enumerate(points):
+                pt = (x * w, bottom - (bottom - top) * v / 100.0)
+                if i == 0:
+                    line.moveTo(*pt)
+                else:
+                    line.lineTo(*pt)
+            area = QPainterPath(line)
+            area.lineTo(points[-1][0] * w, bottom)
+            area.lineTo(points[0][0] * w, bottom)
+            area.closeSubpath()
+            base = QColor(color)
+            grad = QLinearGradient(0, top, 0, bottom)
+            fill = QColor(base)
+            fill.setAlpha(80)
+            grad.setColorAt(0.0, fill)
+            fill.setAlpha(0)
+            grad.setColorAt(1.0, fill)
+            p.fillPath(area, grad)
+            p.setPen(QPen(base, 1.6))
+            p.drawPath(line)
+        p.end()
+
+
 class _GpuCard(_SelectableCard):
     def __init__(self) -> None:
         super().__init__()
         lay = QVBoxLayout(self)
         lay.setContentsMargins(12, 8, 12, 9)
-        lay.setSpacing(5)
+        lay.setSpacing(4)
         top = QHBoxLayout()
         top.setSpacing(6)
         top.addWidget(self.radio)
@@ -209,6 +262,8 @@ class _GpuCard(_SelectableCard):
         self.use = _label(tr("in use"), "badgeUse")
         self.pref = _label(tr("preferred"), "badgePref")
         self.util = _label()
+        self.util.setStyleSheet(f"color: {TOTAL_COLOR}; font-weight: 600;")
+        self.util.setToolTip(tr("Load of the whole graphics card – all applications together"))
         top.addWidget(self.name)
         top.addWidget(self.badge)
         top.addWidget(self.use)
@@ -216,12 +271,23 @@ class _GpuCard(_SelectableCard):
         top.addStretch(1)
         top.addWidget(self.util)
         lay.addLayout(top)
-        self.bar = QProgressBar()
-        self.bar.setRange(0, 100)
-        self.bar.setTextVisible(False)
-        lay.addWidget(self.bar)
+        self.chart = _LoadChart()
+        self.chart.setToolTip(
+            tr("Last 30 seconds. Blue: whole graphics card (all applications). Pink: the selected application.")
+        )
+        lay.addWidget(self.chart)
+        legend = QHBoxLayout()
+        legend.setSpacing(10)
+        self.app_share = _label()
+        self.app_share.setStyleSheet(f"color: {APP_COLOR}; font-size: 9pt; font-weight: 600;")
+        self.app_share.setToolTip(tr("Share of the selected application in this graphics card's load"))
         self.metrics = _label(name="subtle")
-        lay.addWidget(self.metrics)
+        self.span = _label(tr("last 30 s"), "subtle")
+        legend.addWidget(self.app_share)
+        legend.addWidget(self.metrics)
+        legend.addStretch(1)
+        legend.addWidget(self.span)
+        lay.addLayout(legend)
 
     def set_row(self, row: GpuRow) -> None:
         self.name.setText(row.name)
@@ -230,7 +296,9 @@ class _GpuCard(_SelectableCard):
         self.use.setVisible(row.used_by_target)
         self.pref.setVisible(row.preferred)
         self.util.setText(row.util_text)
-        self.bar.setValue(round(row.util_pct or 0))
+        self.chart.set_series(row.total_series, row.app_series)
+        self.app_share.setText(f"▬ {row.app_text}" if row.app_text else "")
+        self.app_share.setVisible(bool(row.app_text))
         self.metrics.setText("   ".join(p for p in (row.vram_text, row.temp_text, row.power_text) if p))
 
 

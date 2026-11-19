@@ -48,6 +48,23 @@ Playground (Modell läuft in `llama-server.exe` auf wechselndem Port; Jans API v
 GPT4All und LocalAI (melden nur installierte, nicht geladene Modelle), vLLM (unter Windows nur in WSL – dort
 sieht Windows nur den VM-Prozess). Die GPU-Messung funktioniert für alle trotzdem.
 
+## Sicherheit (Bedrohungsmodell)
+
+Jedes lokale Programm kann einen dieser Ports belegen. Die Antworten gelten daher als **feindlich**:
+
+| Risiko | Maßnahme |
+|---|---|
+| Anfrage an fremde Hosts (SSRF, Datenabfluss) | Host fest `127.0.0.1`/`::1`, Pfade nur aus der festen Liste der Laufzeiten, Port als Ganzzahl 1–65535; kein Proxy, keine Redirects, keine Nutzdaten, keine Cookies/Token |
+| Speicher-/Zeit-DoS | Antwort ≤ 1 MiB, Timeout 1 s je Lesevorgang **und** 3 s Gesamtfrist (gegen tröpfelnde Server), eigener Thread mit „busy“-Sperre (keine Anfragenflut) |
+| Parser-Angriffe | `json.loads` mit Abfangen von `ValueError` **und** `RecursionError` (tiefe Verschachtelung); nur erwartete Felder mit Typprüfung |
+| HTML-/Rich-Text-Injektion im Overlay | alle Texte als `PlainText`-Labels; Namen nie in HTML, Registry, Dateien, Logs oder Shell-Befehle |
+| Täuschung durch unsichtbare Zeichen | `gpucc.sanitize.clean_text`: Steuer-, Format- (z. B. U+202E), Private-Use-, Surrogat- und Zeilentrennzeichen entfernt, Länge begrenzt |
+| Pfade in Antworten | Modellpfade werden auf den Dateinamen gekürzt (keine Benutzerpfade im Overlay) |
+
+Dieselben Regeln gelten für Launcher-Dateien (Epic v2, Meta): Größenlimits, Typprüfung, und Startdateien
+müssen im Spielordner liegen (keine absoluten Pfade, kein `..`). Nichts davon wird je ausgeführt.
+Tests: `tests/unit/test_localai.py` (Abschnitt „hostile answers“), `tests/unit/test_launchers.py`.
+
 ## Folgen
 
 - AGENTS.md: „keine Netzwerkverbindungen nach außen“ bleibt; Ausnahme ist nur diese Loopback-Abfrage.

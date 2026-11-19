@@ -5,7 +5,7 @@ Rule: the stored preference and the observed GPU are always shown as two separat
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from enum import StrEnum
 
@@ -22,6 +22,7 @@ from gpucc.core.models import (
 )
 from gpucc.i18n import decimal_separator, tr
 from gpucc.localai.runtimes import RUNTIMES, ModelReport
+from gpucc.monitoring.attribution import is_render_engine
 
 
 class Level(StrEnum):
@@ -44,6 +45,10 @@ class GpuRow:
     used_by_target: bool
     preferred: bool
     assignable: bool = False
+    # Chart of the last CHART_WINDOW_S seconds: (x 0..1 = oldest..now, load %) points.
+    total_series: tuple[tuple[float, float], ...] = ()  # whole GPU (all applications)
+    app_series: tuple[tuple[float, float], ...] = ()  # only the selected application; empty = not shown
+    app_text: str = ""  # "Ollama 12 %" – the selected application's share of this GPU
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +85,42 @@ class OverlayState:
 
 
 GIB = 1 << 30
+CHART_WINDOW_S = 30.0
+APP_LABEL_LEN = 22
+
+
+def load_series(
+    history: Sequence[GpuSnapshot], key: GpuKey, pids: Collection[int], window_s: float = CHART_WINDOW_S
+) -> tuple[tuple[tuple[float, float], ...], tuple[tuple[float, float], ...]]:
+    """Whole-GPU load and the process group's render/compute load on ``key`` over the last ``window_s``.
+
+    x runs from 0 (``window_s`` ago) to 1 (latest snapshot); timestamps, not sample counts, because the
+    sampling interval changes (5 s while hidden, 1 s while the overlay is open).
+    """
+    if not history:
+        return (), ()
+    now = history[-1].timestamp
+    pidset = set(pids)
+    total: list[tuple[float, float]] = []
+    app: list[tuple[float, float]] = []
+    for snap in history:
+        age = now - snap.timestamp
+        if age > window_s or age < 0:
+            continue
+        x = 1.0 - age / window_s
+        t = snap.for_gpu(key)
+        if t is not None and t.utilization_pct is not None:
+            total.append((x, max(0.0, min(100.0, t.utilization_pct))))
+        if pidset:
+            load = sum(
+                v
+                for p in snap.processes
+                if p.key == key and p.pid in pidset
+                for e, v in p.engines.items()
+                if is_render_engine(e)
+            )
+            app.append((x, max(0.0, min(100.0, load))))
+    return tuple(total), tuple(app)
 
 
 def kind_label(kind: PreferenceKind) -> str:
@@ -140,28 +181,41 @@ def build_state(
     ai_runtime: str | None = None,
     ai_enabled: bool = False,
     ai_report: ModelReport | None = None,
+    history: Sequence[GpuSnapshot] = (),
+    target_pids: Collection[int] = (),
 ) -> OverlayState:
     notes: list[str] = []
     observed_key = observed.key if observed and observed.confidence is not Confidence.NONE else None
     preferred_key = preferred.key if preferred else None
+    app_share = {s.key: s.render_pct for s in (observed.per_gpu if observed else ())}
+    app_name = target.display_name if target is not None else ""
+    if len(app_name) > APP_LABEL_LEN:
+        app_name = app_name[: APP_LABEL_LEN - 1] + "…"
+    pids = target_pids if target is not None and target.running else ()
 
-    # --- GPU rows
+    # --- GPU rows: the big number is always the WHOLE card; the app's share is shown separately
     rows: list[GpuRow] = []
     for g in discovery.gpus:
         t = snapshot.for_gpu(g.key) if snapshot else None
         util = t.utilization_pct if t else None
+        total_series, app_series = load_series(history, g.key, pids)
+        used = target is not None and g.key == observed_key
+        shows_app = bool(app_series) and (used or any(v >= 0.5 for _, v in app_series))
         rows.append(
             GpuRow(
                 key=g.key,
                 name=g.short_name,
                 badge="iGPU" if g.is_integrated else "",
                 util_pct=util,
-                util_text=f"{util:.0f} %" if util is not None else "–",
+                util_text=tr("Total {pct} %", pct=f"{util:.0f}") if util is not None else "–",
                 vram_text=fmt_vram(t.vram_used_bytes if t else None, g.dedicated_vram_bytes, g.is_integrated),
                 temp_text=f"{t.temperature_c:.0f} °C" if t and t.temperature_c is not None else "",
                 power_text=f"{t.power_w:.0f} W" if t and t.power_w is not None else "",
-                used_by_target=target is not None and g.key == observed_key,
+                used_by_target=used,
                 preferred=target is not None and g.key == preferred_key,
+                total_series=total_series,
+                app_series=app_series if shows_app else (),
+                app_text=f"{app_name} {app_share.get(g.key, 0.0):.0f} %" if shows_app else "",
             )
         )
 
@@ -190,7 +244,7 @@ def build_state(
         name = _name(discovery, observed.key)
         top = observed.per_gpu[0] if observed.per_gpu else None
         if observed.confidence is Confidence.HIGH and top:
-            observed_text = tr("{gpu} · active {pct} %", gpu=name, pct=f"{top.render_pct:.0f}")
+            observed_text = tr("{gpu} · this app {pct} % load", gpu=name, pct=f"{top.render_pct:.0f}")
         elif observed.confidence is Confidence.MEDIUM:
             observed_text = tr("{gpu} · memory in use, currently no load", gpu=name)
         else:

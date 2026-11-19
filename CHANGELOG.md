@@ -5,8 +5,14 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Load chart per GPU (last 30 s) in the style of a download graph: whole graphics card vs. the selected application; the big number is now labelled "Total" and the app's share is shown separately
+- Game libraries: the new per-user Epic Games Launcher (2026) and Meta Horizon Link / Oculus VR libraries
 - Loaded local AI models (on by default, can be switched off in the tray menu): the overlay lists the models of Ollama, LM Studio/Bionic, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI (A1111, Forge, SD.Next) and text-generation-webui next to the measured GPU – queried on 127.0.0.1 only (ADR-0003)
 - Release workflow: the installer is built by GitHub Actions (manual run or tag `vX.Y.Z`); a tag creates a draft release with the installer and its SHA-256 checksum
+
+### Security
+- Local AI queries treat answers as hostile: fixed loopback URLs only, size cap, 3-second total deadline, deep-nesting protection, invisible/bidi characters stripped, plain-text display
+- Launcher files are size-limited and executable paths must stay inside the game folder
 
 ## [0.1.0] – 2026-11-18
 
