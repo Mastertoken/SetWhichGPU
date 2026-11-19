@@ -6,6 +6,7 @@ that are not running, installed games. One row per application (case-insensitive
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from enum import StrEnum
@@ -36,6 +37,7 @@ def exe_note(source: ExeSource) -> str | None:
 class AppGroup(StrEnum):
     RUNNING = "running"
     BACKGROUND = "background"
+    CUSTOM = "custom"  # added by the user via "Add program" (not running right now)
     SAVED = "saved"
     INSTALLED_APPS = "installed_apps"
     INSTALLED = "installed_games"
@@ -45,6 +47,7 @@ class AppGroup(StrEnum):
         return {
             AppGroup.RUNNING: tr("Running"),
             AppGroup.BACKGROUND: tr("Background (no window)"),
+            AppGroup.CUSTOM: tr("Added by you"),
             AppGroup.SAVED: tr("Saved – not running"),
             AppGroup.INSTALLED_APPS: tr("Installed programs"),
             AppGroup.INSTALLED: tr("Installed games"),
@@ -59,6 +62,21 @@ class AppListRow:
     group: AppGroup
     activity: float  # render % – sorts active apps to the top
     color: str = ""  # colour of the GPU the app is measured on (empty: no GPU use)
+    custom: bool = False  # added by the user → can be removed from the list again
+
+
+def valid_program_path(path: str) -> str | None:
+    """A user-chosen program: an existing local .exe file, as a normalised absolute path – else None.
+
+    The file is never started; the path is only used to read its version info and to store the
+    Windows GPU preference for it.
+    """
+    if not path or "\x00" in path or len(path) > 1024:
+        return None
+    full = os.path.normpath(os.path.abspath(path))
+    if full.startswith("\\\\?\\") or not full.lower().endswith(".exe") or not os.path.isfile(full):
+        return None
+    return full
 
 
 def background_candidates(snapshot: GpuSnapshot | None) -> list[int]:
@@ -113,6 +131,7 @@ def build_app_list(
     history: Sequence[GpuSnapshot],
     parents: Mapping[int, int],
     games: Sequence[InstalledGame] = (),
+    custom_paths: Sequence[str] = (),
 ) -> tuple[list[AppListRow], dict[str, TargetApp]]:
     saved_by_key = {path.lower(): (path, value) for path, value in saved_values.items()}
     targets: dict[str, TargetApp] = {}
@@ -120,6 +139,7 @@ def build_app_list(
     game_by_exe = {g.exe_path.lower(): g for g in games if g.exe_path}
     listed_games: set[str] = set()
     colors = gpu_colors(discovery)
+    custom_keys = {p.lower() for p in custom_paths}
 
     def add(target: TargetApp, group: AppGroup, key: str | None = None, store: str | None = None) -> None:
         key = key or target.app_key
@@ -151,12 +171,16 @@ def build_app_list(
             parts.append(tr("preferred: GPU missing"))
         elif pref_name:
             parts.append(tr("preferred {gpu}", gpu=pref_name))
-        rows.append(AppListRow(key, target.display_name, " · ".join(parts), group, activity, color))
+        custom = target.app_key in custom_keys
+        rows.append(AppListRow(key, target.display_name, " · ".join(parts), group, activity, color, custom))
 
     for t in running:
         add(with_game(t, games), AppGroup.RUNNING)
     for t in background:
         add(with_game(t, games), AppGroup.BACKGROUND)
+    for path in custom_paths:  # a running custom app is already listed above
+        if path.lower() not in targets:
+            add(with_game(describe_exe(path), games), AppGroup.CUSTOM)
     for path in [*(p for p, _ in saved_by_key.values()), *profile_paths]:
         if path.lower() in targets:
             continue

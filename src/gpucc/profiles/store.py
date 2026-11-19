@@ -129,6 +129,9 @@ class ProfileStore:
             (key, value),
         )
 
+    def delete_setting(self, key: str) -> None:
+        self._db.execute("DELETE FROM settings WHERE key = ?", (key,))
+
     def settings_with_prefix(self, prefix: str) -> dict[str, str]:
         rows = self._db.execute("SELECT key, value FROM settings WHERE substr(key, 1, ?) = ?", (len(prefix), prefix))
         return {str(r["key"])[len(prefix) :]: str(r["value"]) for r in rows}

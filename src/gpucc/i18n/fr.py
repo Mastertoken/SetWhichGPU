@@ -274,4 +274,14 @@ CATALOG: dict[str, str] = {
     ),
     "last 30 s": "30 dernières s",
     "VR game (Meta Horizon Link)": "Jeu VR (Meta Horizon Link)",
+    "Added by you": "Ajoutés par vous",
+    "＋ Add program …": "＋ Ajouter un programme …",
+    "Add a program that is not listed – choose its .exe file": (
+        "Ajouter un programme absent de la liste – choisissez son fichier .exe"
+    ),
+    "Remove from list": "Retirer de la liste",
+    "Add program": "Ajouter un programme",
+    "Programs (*.exe)": "Programmes (*.exe)",
+    "Program not added": "Programme non ajouté",
+    "Please choose an existing program file (.exe).": "Choisissez un fichier programme (.exe) existant.",
 }

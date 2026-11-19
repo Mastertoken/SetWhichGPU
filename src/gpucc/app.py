@@ -41,7 +41,7 @@ from gpucc.platform.win32 import process, user32
 from gpucc.platform.win32.registry import AutostartEntry
 from gpucc.profiles.store import ProfileStore
 from gpucc.ui.hotkey import HotkeyService
-from gpucc.ui.overlay.applist import background_candidates, build_app_list, with_game
+from gpucc.ui.overlay.applist import background_candidates, build_app_list, valid_program_path, with_game
 from gpucc.ui.overlay.viewmodel import build_state
 from gpucc.ui.overlay.window import OverlayWindow
 from gpucc.ui.tray import TrayService
@@ -52,6 +52,7 @@ HISTORY_LENGTH = 40  # ≥ 30 s of 1-s samples for the load charts (attribution 
 TREE_REFRESH_EVERY = 5  # snapshots
 FOLLOW_DEBOUNCE_MS = 200
 LIST_REFRESH_EVERY = 3  # snapshots (~3 s while the overlay is open)
+CUSTOM_PREFIX = "custom_app:"  # settings key prefix: programs added by the user (value = exe path)
 LOCALAI_EVERY = 3  # snapshots (~3 s) between "loaded models" queries while such a runtime is shown
 LEARNED_PREFIX = "learned_exe:"
 LEARN_MIN_VRAM = 64 << 20  # a process counts as "using the GPU" from this much dedicated memory
@@ -177,6 +178,8 @@ class Controller(QObject):
         self.overlay.app_selected.connect(self.select_app)
         self.overlay.follow_requested.connect(self.resume_follow)
         self.overlay.rescan_requested.connect(self.rescan_library)
+        self.overlay.program_chosen.connect(self.add_program)
+        self.overlay.custom_remove_requested.connect(self.remove_program)
         self.overlay.apps_panel_toggled.connect(self._on_apps_panel_toggled)
         self.hotkeys = HotkeyService()
         app.installNativeEventFilter(self.hotkeys.native_filter)
@@ -361,6 +364,26 @@ class Controller(QObject):
             self._update_scan_state()
             self._refresh_app_list()
 
+    def add_program(self, path: str) -> None:
+        """A program the scanners missed, picked by the user. Only remembered – never started."""
+        full = valid_program_path(path)
+        if full is None:
+            self.tray.notify(tr("Program not added"), tr("Please choose an existing program file (.exe)."), True)
+            return
+        self._store.set_setting(CUSTOM_PREFIX + full.lower(), full)
+        log.info("custom program added")
+        running = next((t for t in self._probe.running_apps() if t.app_key == full.lower()), None)
+        self._manual = True
+        self._set_target(running or self._probe.describe_exe(full))
+        self.overlay.set_apps_open(True)
+        self._render()
+        self._refresh_app_list()
+
+    def remove_program(self, key: str) -> None:
+        self._store.delete_setting(CUSTOM_PREFIX + key)
+        log.info("custom program removed")
+        self._refresh_app_list()
+
     def rescan_library(self) -> None:
         """Explicit refresh after installing/removing games (panel button, F5, tray)."""
         self.library.rescan()
@@ -419,6 +442,7 @@ class Controller(QObject):
             discovery=self._discovery,
             history=list(self._history),
             parents=self._probe.parent_map(),
+            custom_paths=list(self._store.settings_with_prefix(CUSTOM_PREFIX).values()),
         )
         self._app_targets = targets
         current = self._target.app_key if self._target else None

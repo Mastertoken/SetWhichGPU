@@ -5,6 +5,7 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- "＋ Add program …" in the application list: add any .exe the scanners missed (own group "Added by you", removable via right-click); only existing .exe files are accepted and nothing is started
 - Each graphics card has its own colour (NVIDIA green, AMD red, Intel blue, extra colours for a second card of a vendor): card name, total load and chart line; applications in the list take the colour of the GPU they run on – full brightness while they cause load, a darker shade while they only hold GPU memory
 - Load chart per GPU (last 30 s) in the style of a download graph: whole graphics card vs. the selected application; the big number is now labelled "Total" and the app's share is shown separately
 - Game libraries: the new per-user Epic Games Launcher (2026) and Meta Horizon Link / Oculus VR libraries

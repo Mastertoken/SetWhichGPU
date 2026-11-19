@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import os
 import re
 import time
 from collections.abc import Sequence
@@ -35,6 +36,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -42,6 +44,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMenu,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -354,6 +357,8 @@ class _AppPanel(QFrame):
     app_selected = Signal(str)
     follow_requested = Signal()
     rescan_requested = Signal()
+    add_requested = Signal()
+    remove_requested = Signal(str)  # key of an entry the user added
 
     def __init__(self) -> None:
         super().__init__()
@@ -397,11 +402,31 @@ class _AppPanel(QFrame):
         self._wheel = _SmoothWheel(self.list)
         self.list.viewport().installEventFilter(self._wheel)
         self.list.installEventFilter(self)
+        self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list.customContextMenuRequested.connect(self._on_context_menu)
         lay.addWidget(self.list, 1)
+        self.add_button = QPushButton(tr("＋ Add program …"))
+        self.add_button.setObjectName("follow")
+        self.add_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.add_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.add_button.setToolTip(tr("Add a program that is not listed – choose its .exe file"))
+        self.add_button.clicked.connect(self.add_requested)
+        lay.addWidget(self.add_button)
+        self._custom: set[str] = set()
         self._signature: tuple[tuple[AppGroup, str], ...] = ()
         self._labels: dict[str, tuple[QListWidgetItem, QLabel, str]] = {}
         self._current: str | None = None
         self._pending: tuple[tuple[AppListRow, ...], str | None] | None = None
+
+    def _on_context_menu(self, pos: QPoint) -> None:
+        item = self.list.itemAt(pos)
+        key = item.data(_ROLE_KEY) if item is not None else None
+        if not key or key not in self._custom:
+            return
+        menu = QMenu(self)
+        remove = menu.addAction(tr("Remove from list"))
+        if menu.exec(self.list.viewport().mapToGlobal(pos)) is remove:
+            self.remove_requested.emit(key)
 
     def set_scan_state(self, scanning: bool, counts: tuple[int, int] | None) -> None:
         """counts = (games, programs) of the last finished scan."""
@@ -418,6 +443,7 @@ class _AppPanel(QFrame):
         """Refresh without disturbing scrolling: texts update in place, re-ordering waits for the user."""
         self.follow_button.setVisible(not following)
         rows = tuple(rows)
+        self._custom = {r.key for r in rows if r.custom}
         signature = tuple((r.group, r.key) for r in rows)
         if signature == self._signature:
             self._update_in_place(rows, current_key)
@@ -533,6 +559,8 @@ class OverlayWindow(QWidget):
     rescan_requested = Signal()
     apps_panel_toggled = Signal(bool)
     gamemode_requested = Signal(object)  # GpuKey to disable while the game runs
+    program_chosen = Signal(str)  # .exe path picked via "Add program"
+    custom_remove_requested = Signal(str)  # app key of a user-added entry
 
     def __init__(self) -> None:
         super().__init__(
@@ -545,6 +573,7 @@ class OverlayWindow(QWidget):
         self.setStyleSheet(STYLE)
         self.setFixedWidth(WIDTH)
         self._apps_open = False
+        self._dialog_open = False  # a file dialog of ours has the focus → don't close on focus loss
         self._shown_at = 0.0
         self._show_processes = False
         self._pinned = False
@@ -565,6 +594,8 @@ class OverlayWindow(QWidget):
         self.apps_panel.app_selected.connect(self.app_selected)
         self.apps_panel.follow_requested.connect(self.follow_requested)
         self.apps_panel.rescan_requested.connect(self.rescan_requested)
+        self.apps_panel.add_requested.connect(self.choose_program)
+        self.apps_panel.remove_requested.connect(self.custom_remove_requested)
         outer.addWidget(self.apps_panel)
         main = QWidget()
         main.setFixedWidth(WIDTH)
@@ -919,6 +950,19 @@ class OverlayWindow(QWidget):
         self.raise_()
         self.activateWindow()
 
+    def choose_program(self) -> None:
+        """File dialog for a program that is not listed. The overlay stays open meanwhile."""
+        start = os.environ.get("PROGRAMFILES", "C:\\")
+        self._dialog_open = True
+        try:
+            path, _ = QFileDialog.getOpenFileName(self, tr("Add program"), start, tr("Programs (*.exe)"))
+        finally:
+            self._dialog_open = False
+        self.raise_()
+        self.activateWindow()
+        if path:
+            self.program_chosen.emit(path)
+
     def dismiss(self, reason: str) -> None:
         if self.isVisible():
             self.hide()
@@ -978,6 +1022,11 @@ class OverlayWindow(QWidget):
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.Type.ActivationChange and self.isVisible():
             self._update_opacity()
-            if not self._pinned and not self.isActiveWindow() and time.monotonic() - self._shown_at > FOCUS_GRACE_S:
+            if (
+                not self._pinned
+                and not self._dialog_open
+                and not self.isActiveWindow()
+                and time.monotonic() - self._shown_at > FOCUS_GRACE_S
+            ):
                 self.dismiss("focus_lost")
         super().changeEvent(event)
