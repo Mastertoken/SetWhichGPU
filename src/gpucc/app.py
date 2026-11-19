@@ -53,6 +53,7 @@ TREE_REFRESH_EVERY = 5  # snapshots
 FOLLOW_DEBOUNCE_MS = 200
 LIST_REFRESH_EVERY = 3  # snapshots (~3 s while the overlay is open)
 CUSTOM_PREFIX = "custom_app:"  # settings key prefix: programs added by the user (value = exe path)
+LIST_FIRST_BUILD_DELAY_MS = 30  # let the loading animation paint before the first list is built
 LOCALAI_EVERY = 3  # snapshots (~3 s) between "loaded models" queries while such a runtime is shown
 LEARNED_PREFIX = "learned_exe:"
 LEARN_MIN_VRAM = 64 << 20  # a process counts as "using the GPU" from this much dedicated memory
@@ -169,7 +170,11 @@ class Controller(QObject):
         self.localai = LocalAiThread()
         self.localai.report_ready.connect(self._on_ai_report)
 
-        self.library = LibraryService(lambda: self._store.settings_with_prefix(LEARNED_PREFIX))
+        self.library = LibraryService(
+            lambda: self._store.settings_with_prefix(LEARNED_PREFIX),
+            prewarm=getattr(probe, "prewarm", None),  # version info read off the UI thread
+            extra_paths=self._known_exe_paths,
+        )
         self.library.games_ready.connect(self._on_games_ready)
 
         self.overlay = OverlayWindow()
@@ -362,7 +367,27 @@ class Controller(QObject):
         if open_:
             self.library.ensure_fresh()
             self._update_scan_state()
-            self._refresh_app_list()
+            if not self.overlay.apps_panel.has_rows:
+                # First opening: show the loading animation first, build the list right after it painted.
+                self.overlay.apps_panel.set_loading(True)
+                QTimer.singleShot(LIST_FIRST_BUILD_DELAY_MS, self._first_list_build)
+            else:
+                self._refresh_app_list()
+
+    def _first_list_build(self) -> None:
+        self._refresh_app_list()
+
+    def _known_exe_paths(self) -> list[str]:
+        """Saved preferences, profiles and user-added programs (GUI thread: registry + SQLite)."""
+        try:
+            saved = list(self._preferences.entries())
+        except OSError:
+            saved = []
+        return [
+            *saved,
+            *(path for path, _, _ in self._store.profiles()),
+            *self._store.settings_with_prefix(CUSTOM_PREFIX).values(),
+        ]
 
     def add_program(self, path: str) -> None:
         """A program the scanners missed, picked by the user. Only remembered – never started."""
@@ -396,6 +421,12 @@ class Controller(QObject):
             (sum(g.is_game for g in games), sum(not g.is_game for g in games)) if self.library.has_scanned else None
         )
         self.overlay.apps_panel.set_scan_state(self.library.scanning, counts)
+        self._update_loading()
+
+    def _update_loading(self) -> None:
+        """Spinner while the very first scan runs or before the first list was built."""
+        first_scan = self.library.scanning and not self.library.has_scanned
+        self.overlay.apps_panel.set_loading(first_scan or not self.overlay.apps_panel.has_rows)
 
     def _on_games_ready(self, games: object) -> None:
         self.library.accept(games)
@@ -447,6 +478,7 @@ class Controller(QObject):
         self._app_targets = targets
         current = self._target.app_key if self._target else None
         self.overlay.set_app_list(rows, current, following=not self._manual)
+        self._update_loading()
 
     def _target_alive(self) -> bool:
         t = self._target

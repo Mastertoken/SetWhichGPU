@@ -33,6 +33,14 @@ class WindowsForegroundProbe:
         self._own_pid = own_pid
         self._version_cache: dict[str, dict[str, str]] = {}
 
+    def prewarm(self, paths: Iterable[str]) -> None:
+        """Read version info ahead of time – called on the library worker thread so that the first
+        application list does not stall the UI (e.g. while a sleeping hard disk spins up).
+        Single dict assignments are atomic in CPython; a race only means a value is read twice."""
+        for path in paths:
+            if path:
+                self._version(path)
+
     def _version(self, path: str | None) -> dict[str, str]:
         if not path:
             return {}

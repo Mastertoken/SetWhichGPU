@@ -274,7 +274,7 @@ CATALOG: dict[str, str] = {
     "last 30 s": "últimos 30 s",
     "VR game (Meta Horizon Link)": "Juego de RV (Meta Horizon Link)",
     "Added by you": "Añadidos por ti",
-    "＋ Add program …": "＋ Añadir programa …",
+    "+ Add program …": "+ Añadir programa …",
     "Add a program that is not listed – choose its .exe file": (
         "Añadir un programa que no aparece – elige su archivo .exe"
     ),
@@ -283,4 +283,5 @@ CATALOG: dict[str, str] = {
     "Programs (*.exe)": "Programas (*.exe)",
     "Program not added": "Programa no añadido",
     "Please choose an existing program file (.exe).": "Elige un archivo de programa (.exe) existente.",
+    "Loading applications and games …": "Cargando aplicaciones y juegos …",
 }

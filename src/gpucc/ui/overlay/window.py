@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import math
 import os
 import re
 import time
@@ -14,9 +15,11 @@ from PySide6.QtCore import (
     QEvent,
     QObject,
     QPoint,
+    QPointF,
     QRectF,
     QSize,
     Qt,
+    QTimer,
     QVariantAnimation,
     Signal,
 )
@@ -24,6 +27,7 @@ from PySide6.QtGui import (
     QColor,
     QFont,
     QFontMetrics,
+    QHideEvent,
     QKeyEvent,
     QLinearGradient,
     QMouseEvent,
@@ -31,7 +35,9 @@ from PySide6.QtGui import (
     QPainterPath,
     QPaintEvent,
     QPen,
+    QPolygonF,
     QScreen,
+    QShowEvent,
     QWheelEvent,
 )
 from PySide6.QtWidgets import (
@@ -254,6 +260,79 @@ class _LoadChart(QWidget):
         p.end()
 
 
+SPINNER_SIZE = 112
+SPINNER_ICON = 44
+SPINNER_COLOR = "#7AA7FF"
+SPINNER_STEP_DEG = 6  # per frame
+SPINNER_FRAME_MS = 16
+
+
+class _LoadingSpinner(QWidget):
+    """Two rotating arrows (refresh symbol) with the app icon resting in the middle."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setMinimumHeight(SPINNER_SIZE + 16)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._angle = 0.0
+        self._icon = app_pixmap(SPINNER_ICON * 2)  # 2x for crisp scaling on high-DPI screens
+        self._timer = QTimer(self)
+        self._timer.setInterval(SPINNER_FRAME_MS)
+        self._timer.timeout.connect(self._step)
+        self.setToolTip(tr("Loading applications and games …"))
+
+    def showEvent(self, event: QShowEvent) -> None:
+        self._timer.start()  # animate only while visible
+        super().showEvent(event)
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._timer.stop()
+        super().hideEvent(event)
+
+    def _step(self) -> None:
+        self._angle = (self._angle + SPINNER_STEP_DEG) % 360
+        self.update()
+
+    def paintEvent(self, _event: QPaintEvent) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        cx, cy = self.width() / 2, self.height() / 2
+        r = SPINNER_SIZE * 0.36
+        stroke = SPINNER_SIZE * 0.075
+        color = QColor(SPINNER_COLOR)
+        p.save()
+        p.translate(cx, cy)
+        p.rotate(self._angle)
+        pen = QPen(color, stroke)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        box = QRectF(-r, -r, 2 * r, 2 * r)
+        head = stroke * 1.9  # arrowhead half width
+        for start in (28.0, 208.0):  # upper arc ends right (pointing down), lower arc ends left (pointing up)
+            p.drawArc(box, int((start + 8) * 16), 124 * 16)
+            a = math.radians(start)
+            px, py = r * math.cos(a), -r * math.sin(a)
+            dx, dy = math.sin(a), math.cos(a)  # clockwise tangent (screen y points down)
+            nx, ny = math.cos(a), -math.sin(a)  # radial
+            tri = QPolygonF(
+                [
+                    QPointF(px + dx * head * 1.3, py + dy * head * 1.3),
+                    QPointF(px + nx * head - dx * head * 0.4, py + ny * head - dy * head * 0.4),
+                    QPointF(px - nx * head - dx * head * 0.4, py - ny * head - dy * head * 0.4),
+                ]
+            )
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(color)
+            p.drawPolygon(tri)
+            p.setPen(pen)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+        p.restore()
+        target = QRectF(cx - SPINNER_ICON / 2, cy - SPINNER_ICON / 2, SPINNER_ICON, SPINNER_ICON)
+        p.drawPixmap(target, self._icon, QRectF(self._icon.rect()))
+        p.end()
+
+
 class _GpuCard(_SelectableCard):
     def __init__(self) -> None:
         super().__init__()
@@ -378,7 +457,7 @@ class _AppPanel(QFrame):
         self.rescan_button.clicked.connect(self.rescan_requested)
         head.addWidget(self.rescan_button)
         lay.addLayout(head)
-        self.scan_status = _label(name="subtle")
+        self.scan_status = _label(name="subtle", wrap=True)
         lay.addWidget(self.scan_status)
         self.follow_button = QPushButton(tr("↺  Follow active application"))
         self.follow_button.setObjectName("follow")
@@ -405,7 +484,11 @@ class _AppPanel(QFrame):
         self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list.customContextMenuRequested.connect(self._on_context_menu)
         lay.addWidget(self.list, 1)
-        self.add_button = QPushButton(tr("＋ Add program …"))
+        self.spinner = _LoadingSpinner()  # replaces the list while the first scan/list is loading
+        self.spinner.setVisible(False)
+        lay.addWidget(self.spinner, 1)
+        self._built = False
+        self.add_button = QPushButton(tr("+ Add program …"))
         self.add_button.setObjectName("follow")
         self.add_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.add_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -417,6 +500,15 @@ class _AppPanel(QFrame):
         self._labels: dict[str, tuple[QListWidgetItem, QLabel, str]] = {}
         self._current: str | None = None
         self._pending: tuple[tuple[AppListRow, ...], str | None] | None = None
+
+    @property
+    def has_rows(self) -> bool:
+        """The list has been built at least once (it may legitimately be empty)."""
+        return self._built
+
+    def set_loading(self, loading: bool) -> None:
+        self.spinner.setVisible(loading)
+        self.list.setVisible(not loading)
 
     def _on_context_menu(self, pos: QPoint) -> None:
         item = self.list.itemAt(pos)
@@ -443,6 +535,7 @@ class _AppPanel(QFrame):
         """Refresh without disturbing scrolling: texts update in place, re-ordering waits for the user."""
         self.follow_button.setVisible(not following)
         rows = tuple(rows)
+        self._built = True
         self._custom = {r.key for r in rows if r.custom}
         signature = tuple((r.group, r.key) for r in rows)
         if signature == self._signature:

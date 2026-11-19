@@ -1,4 +1,4 @@
-"""Programs the user adds by hand ("＋ Add program")."""
+"""Programs the user adds by hand ("+ Add program")."""
 
 from gpucc.core.models import TargetApp
 from gpucc.ui.overlay.applist import AppGroup, build_app_list, valid_program_path
