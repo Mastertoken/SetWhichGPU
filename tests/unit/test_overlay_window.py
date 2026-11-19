@@ -32,6 +32,19 @@ def test_render_and_escape(qtbot, discovery, keys):
     assert reasons == ["escape"] and not w.isVisible()
 
 
+def test_close_button_closes_even_when_pinned(qtbot):
+    from PySide6.QtGui import QGuiApplication
+
+    w = OverlayWindow()
+    qtbot.addWidget(w)
+    reasons = []
+    w.closed.connect(reasons.append)
+    w.show_on(QGuiApplication.primaryScreen())
+    w.set_pinned(True)
+    qtbot.mouseClick(w.close_button, Qt.MouseButton.LeftButton)
+    assert reasons == ["close_button"] and not w.isVisible() and not w.pinned
+
+
 def test_loaded_ai_models_section_is_plain_text(qtbot, discovery):
     from gpucc.localai.runtimes import LoadedModel, ModelReport
 

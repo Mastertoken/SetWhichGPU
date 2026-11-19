@@ -284,4 +284,5 @@ CATALOG: dict[str, str] = {
     "Program not added": "Programa no añadido",
     "Please choose an existing program file (.exe).": "Elige un archivo de programa (.exe) existente.",
     "Loading applications and games …": "Cargando aplicaciones y juegos …",
+    "Close (also when pinned) · Esc": "Cerrar (también si está fijado) · Esc",
 }

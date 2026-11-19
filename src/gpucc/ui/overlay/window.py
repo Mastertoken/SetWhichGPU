@@ -133,6 +133,9 @@ QProgressBar::chunk { background: #7AA7FF; border-radius: 3px; }
 QPushButton#pin { color: #9AA0A6; background: rgba(255,255,255,0.06); border: none;
                   border-radius: 8px; padding: 3px 10px; font-size: 8.5pt; }
 QPushButton#pin:hover { background: rgba(255,255,255,0.12); color: #E8EAED; }
+QPushButton#close { color: #9AA0A6; background: rgba(255,255,255,0.06); border: none;
+                    border-radius: 7px; padding: 1px 7px; font-size: 8.5pt; }
+QPushButton#close:hover { background: #E5534B; color: #FFFFFF; }
 QPushButton#pin[active="true"] { color: #0F1115; background: #7AA7FF; font-weight: 600; }
 """
 
@@ -737,11 +740,22 @@ class OverlayWindow(QWidget):
         self.apps_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.apps_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.apps_button.clicked.connect(self.toggle_apps_panel)
+        self.close_button = QPushButton("✕")
+        self.close_button.setObjectName("close")
+        self.close_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.close_button.setToolTip(tr("Close (also when pinned) · Esc"))
+        self.close_button.clicked.connect(lambda: self.dismiss("close_button"))
         buttons = QHBoxLayout()
         buttons.setSpacing(6)
         buttons.addWidget(self.apps_button)
         buttons.addWidget(self.pin_button)
-        right.addWidget(self.hotkey)
+        top_row = QHBoxLayout()  # hotkey hint and the close button share the top line
+        top_row.setSpacing(8)
+        top_row.addStretch(1)
+        top_row.addWidget(self.hotkey)
+        top_row.addWidget(self.close_button)
+        right.addLayout(top_row)
         right.addLayout(buttons)
         right.addStretch(1)
         head.addLayout(right)
