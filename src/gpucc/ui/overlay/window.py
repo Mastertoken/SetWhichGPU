@@ -112,6 +112,11 @@ QListWidget#apps::item:selected { background: rgba(122,167,255,0.18); }
 QPushButton#follow { color: #E8EAED; background: rgba(122,167,255,0.18); border: 1px solid #7AA7FF;
                      border-radius: 8px; padding: 4px 8px; text-align: left; font-size: 9pt; }
 QPushButton#follow:hover { background: rgba(122,167,255,0.28); }
+QPushButton#rescan { color: #E8EAED; background: rgba(122,167,255,0.18); border: 1px solid #7AA7FF;
+                     border-radius: 8px; padding: 3px 10px; font-size: 8.5pt; }
+QPushButton#rescan:hover { background: rgba(122,167,255,0.28); }
+QPushButton#rescan:disabled { color: #9AA0A6; background: rgba(122,167,255,0.08);
+                              border: 1px solid rgba(122,167,255,0.35); }
 QScrollBar:vertical { background: transparent; width: 8px; }
 QScrollBar::handle:vertical { background: rgba(255,255,255,0.15); border-radius: 4px; min-height: 24px; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
@@ -450,7 +455,7 @@ class _AppPanel(QFrame):
         head.addWidget(_label(tr("APPLICATIONS"), "section"))
         head.addStretch(1)
         self.rescan_button = QPushButton(tr("⟳ Rescan"))
-        self.rescan_button.setObjectName("pin")
+        self.rescan_button.setObjectName("rescan")  # same accent look as "+ Add program"
         self.rescan_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.rescan_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.rescan_button.setToolTip(tr("Rescan installed games and running applications (F5)"))
