@@ -60,6 +60,7 @@ $p = Start-Process -FilePath $exe -ArgumentList "--gamemode-helper" -Wait -PassT
 if ($p.ExitCode -ne 2) { throw "smoke test failed: '--gamemode-helper' without arguments returned $($p.ExitCode), expected 2" }
 Write-Host "smoke test passed" -ForegroundColor Green
 
+Invoke-Step "PresentMon (pinned, checksum-verified)" { uv run python tools\release\fetch_presentmon.py }
 Invoke-Step "licenses" { uv run python tools\release\collect_licenses.py }
 Invoke-Step "Inno Setup" { & $iscc /Q "/DAppVersion=$version" packaging\setwhichgpu.iss }
 

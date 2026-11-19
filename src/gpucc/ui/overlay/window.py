@@ -7,7 +7,8 @@ import math
 import os
 import re
 import time
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 
 from PySide6.QtCore import (
     QAbstractAnimation,
@@ -29,7 +30,6 @@ from PySide6.QtGui import (
     QFontMetrics,
     QHideEvent,
     QKeyEvent,
-    QLinearGradient,
     QMouseEvent,
     QPainter,
     QPainterPath,
@@ -61,7 +61,9 @@ from gpucc.branding import APP_NAME
 from gpucc.core.models import GpuKey
 from gpucc.i18n import tr
 from gpucc.ui.icons import app_pixmap
+from gpucc.ui.overlay.analysis_panel import ANALYSIS_WIDTH, AnalysisPanel
 from gpucc.ui.overlay.applist import AppGroup, AppListRow
+from gpucc.ui.overlay.charts import SeriesChart
 from gpucc.ui.overlay.colors import APP_COLOR
 from gpucc.ui.overlay.viewmodel import GpuRow, Level, OverlayState
 
@@ -102,6 +104,9 @@ QLabel#radio { color: #7AA7FF; font-size: 11pt; }
 QFrame#side { background: rgba(255,255,255,0.035); border: none;
               border-right: 1px solid rgba(255,255,255,0.08);
               border-top-left-radius: 14px; border-bottom-left-radius: 14px; }
+QFrame#sideRight { background: rgba(255,255,255,0.035); border: none;
+                   border-left: 1px solid rgba(255,255,255,0.08);
+                   border-top-right-radius: 14px; border-bottom-right-radius: 14px; }
 QLineEdit { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px; padding: 4px 8px; selection-background-color: #7AA7FF; }
 QLineEdit:focus { border: 1px solid #7AA7FF; }
@@ -219,53 +224,16 @@ TOTAL_COLOR = "#7A86FF"  # whole GPU, only if the card has no colour of its own
 CHART_HEIGHT = 40
 
 
-class _LoadChart(QWidget):
-    """Load over the last 30 s as lines with a fading area below (whole GPU + selected app)."""
+class _LoadChart(SeriesChart):
+    """Load over the last 30 s: whole GPU (card colour) + selected app (white)."""
 
     def __init__(self) -> None:
-        super().__init__()
-        self.setFixedHeight(CHART_HEIGHT)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self._series: list[tuple[tuple[tuple[float, float], ...], str]] = []
+        super().__init__(CHART_HEIGHT)
 
     def set_series(
         self, total: Sequence[tuple[float, float]], app: Sequence[tuple[float, float]], color: str = ""
     ) -> None:
-        self._series = [(tuple(total), color or TOTAL_COLOR), (tuple(app), APP_COLOR)]
-        self.update()
-
-    def paintEvent(self, _event: QPaintEvent) -> None:
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        w, h = float(self.width()), float(self.height())
-        top, bottom = 2.0, h - 1.5
-        p.setPen(QPen(QColor(255, 255, 255, 22), 1))
-        p.drawLine(0, int(bottom), int(w), int(bottom))  # baseline
-        for points, color in self._series:
-            if len(points) < 2:
-                continue
-            line = QPainterPath()
-            for i, (x, v) in enumerate(points):
-                pt = (x * w, bottom - (bottom - top) * v / 100.0)
-                if i == 0:
-                    line.moveTo(*pt)
-                else:
-                    line.lineTo(*pt)
-            area = QPainterPath(line)
-            area.lineTo(points[-1][0] * w, bottom)
-            area.lineTo(points[0][0] * w, bottom)
-            area.closeSubpath()
-            base = QColor(color)
-            grad = QLinearGradient(0, top, 0, bottom)
-            fill = QColor(base)
-            fill.setAlpha(80)
-            grad.setColorAt(0.0, fill)
-            fill.setAlpha(0)
-            grad.setColorAt(1.0, fill)
-            p.fillPath(area, grad)
-            p.setPen(QPen(base, 1.6))
-            p.drawPath(line)
-        p.end()
+        self.set_data([(total, color or TOTAL_COLOR, True), (app, APP_COLOR, True)], 100.0)
 
 
 SPINNER_SIZE = 112
@@ -659,6 +627,7 @@ class OverlayWindow(QWidget):
     follow_requested = Signal()
     rescan_requested = Signal()
     apps_panel_toggled = Signal(bool)
+    analysis_toggled = Signal(bool)
     gamemode_requested = Signal(object)  # GpuKey to disable while the game runs
     program_chosen = Signal(str)  # .exe path picked via "Add program"
     custom_remove_requested = Signal(str)  # app key of a user-added entry
@@ -674,6 +643,7 @@ class OverlayWindow(QWidget):
         self.setStyleSheet(STYLE)
         self.setFixedWidth(WIDTH)
         self._apps_open = False
+        self._analysis_open = False
         self._dialog_open = False  # a file dialog of ours has the focus → don't close on focus loss
         self._shown_at = 0.0
         self._show_processes = False
@@ -701,6 +671,9 @@ class OverlayWindow(QWidget):
         main = QWidget()
         main.setFixedWidth(WIDTH)
         outer.addWidget(main)
+        self.analysis_panel = AnalysisPanel()
+        self.analysis_panel.setVisible(False)
+        outer.addWidget(self.analysis_panel)
         root = QVBoxLayout(main)
         root.setContentsMargins(20, 14, 20, 16)
         root.setSpacing(10)
@@ -714,9 +687,11 @@ class OverlayWindow(QWidget):
         brand.addWidget(self.brand_icon)
         brand.addWidget(_label(APP_NAME, "brand"))
         brand.addStretch(1)
+        self.hotkey = _label(name="subtle")
+        self.hotkey.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        brand.addWidget(self.hotkey)
         root.addLayout(brand)
 
-        head = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(1)
         self.title = _label(name="title")
@@ -725,11 +700,7 @@ class OverlayWindow(QWidget):
         titles.addWidget(self.title)
         titles.addWidget(self.subtitle)
         titles.addWidget(self.details)
-        head.addLayout(titles, 1)
-        right = QVBoxLayout()
-        right.setSpacing(4)
-        self.hotkey = _label(name="subtle")
-        self.hotkey.setAlignment(Qt.AlignmentFlag.AlignRight)
+        root.addLayout(titles)
         self.pin_button = QPushButton()
         self.pin_button.setObjectName("pin")
         self.pin_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -746,20 +717,20 @@ class OverlayWindow(QWidget):
         self.close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.close_button.setToolTip(tr("Close (also when pinned) · Esc"))
         self.close_button.clicked.connect(lambda: self.dismiss("close_button"))
-        buttons = QHBoxLayout()
+        brand.addWidget(self.close_button)  # top right: hotkey hint + close
+        self.analysis_button = QPushButton(tr("📈 Analysis"))
+        self.analysis_button.setObjectName("pin")
+        self.analysis_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.analysis_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.analysis_button.setToolTip(tr("Performance and frame analysis (F)"))
+        self.analysis_button.clicked.connect(self.toggle_analysis_panel)
+        buttons = QHBoxLayout()  # own line below the title: the title keeps the full width
         buttons.setSpacing(6)
         buttons.addWidget(self.apps_button)
+        buttons.addWidget(self.analysis_button)
         buttons.addWidget(self.pin_button)
-        top_row = QHBoxLayout()  # hotkey hint and the close button share the top line
-        top_row.setSpacing(8)
-        top_row.addStretch(1)
-        top_row.addWidget(self.hotkey)
-        top_row.addWidget(self.close_button)
-        right.addLayout(top_row)
-        right.addLayout(buttons)
-        right.addStretch(1)
-        head.addLayout(right)
-        root.addLayout(head)
+        buttons.addStretch(1)
+        root.addLayout(buttons)
 
         self.status_block = QWidget()
         grid = QGridLayout(self.status_block)
@@ -846,7 +817,7 @@ class OverlayWindow(QWidget):
         screen = self.screen().availableGeometry() if self.screen() else None
         x = self.x() - SIDE_WIDTH if open_ else self.x() + SIDE_WIDTH
         self.apps_panel.setVisible(open_)
-        self.setFixedWidth(WIDTH + (SIDE_WIDTH if open_ else 0))
+        self.setFixedWidth(self._total_width())
         if screen is not None and self.isVisible():
             x = max(screen.left(), min(x, screen.right() - self.width()))
             self.move(x, self.y())
@@ -860,6 +831,32 @@ class OverlayWindow(QWidget):
 
     def set_app_list(self, rows: Sequence[AppListRow], current_key: str | None, following: bool) -> None:
         self.apps_panel.set_rows(rows, current_key, following)
+
+    def _total_width(self) -> int:
+        return WIDTH + (SIDE_WIDTH if self._apps_open else 0) + (ANALYSIS_WIDTH if self._analysis_open else 0)
+
+    # ------------------------------------------------------------------ analysis panel (right, ADR-0004)
+    @property
+    def analysis_open(self) -> bool:
+        return self._analysis_open
+
+    def toggle_analysis_panel(self) -> None:
+        self.set_analysis_open(not self._analysis_open)
+
+    def set_analysis_open(self, open_: bool) -> None:
+        if open_ == self._analysis_open:
+            return
+        self._analysis_open = open_
+        self.analysis_panel.setVisible(open_)
+        self.setFixedWidth(self._total_width())
+        screen = self.screen().availableGeometry() if self.screen() else None
+        if screen is not None and self.isVisible() and self.x() + self.width() > screen.right():
+            self.move(max(screen.left(), screen.right() - self.width()), self.y())  # opens to the right
+        self.analysis_button.setProperty("active", open_)
+        self.analysis_button.style().unpolish(self.analysis_button)
+        self.analysis_button.style().polish(self.analysis_button)
+        self.fit_to_content()
+        self.analysis_toggled.emit(open_)
 
     # ------------------------------------------------------------------ pinning
     @property
@@ -882,9 +879,9 @@ class OverlayWindow(QWidget):
         self.pin_button.style().unpolish(self.pin_button)
         self.pin_button.style().polish(self.pin_button)
         self.footer.setText(
-            tr("Pinned · A unpin · L applications · ↑/↓ + Enter choose GPU · Esc closes")
+            tr("Pinned · A unpin · L applications · F analysis · ↑/↓ + Enter GPU · Esc closes")
             if self._pinned
-            else tr("Esc closes · A pin · L applications · ↑/↓ + Enter GPU · P processes")
+            else tr("Esc closes · A pin · L applications · F analysis · ↑/↓ + Enter GPU · P processes")
         )
         self._update_opacity()
 
@@ -968,10 +965,8 @@ class OverlayWindow(QWidget):
             self.move(self.x(), max(area.top() + SCREEN_MARGIN, area.bottom() - SCREEN_MARGIN - height))
 
     def _subtitle_width(self) -> int:
-        """Room left of the button column (its width depends on the language), so eliding never clips."""
-        buttons = self.apps_button.sizeHint().width() + self.pin_button.sizeHint().width() + 6
-        spacing = 16  # layout spacing between the title column and the buttons + safety margin
-        return max(120, WIDTH - 2 * 20 - buttons - spacing)
+        """The title column has the full width (buttons are on their own line)."""
+        return WIDTH - 2 * 20 - 4
 
     def _on_gamemode_clicked(self) -> None:
         if self._state is not None and self._state.gamemode_gpu is not None:
@@ -1062,6 +1057,18 @@ class OverlayWindow(QWidget):
         self.raise_()
         self.activateWindow()
 
+    @contextmanager
+    def keep_open(self) -> Iterator[None]:
+        """For our own dialogs/UAC prompts: losing the focus to them must not close the overlay."""
+        self._dialog_open = True
+        try:
+            yield
+        finally:
+            self._dialog_open = False
+            if self.isVisible():
+                self.raise_()
+                self.activateWindow()
+
     def choose_program(self) -> None:
         """File dialog for a program that is not listed. The overlay stays open meanwhile."""
         start = os.environ.get("PROGRAMFILES", "C:\\")
@@ -1118,6 +1125,8 @@ class OverlayWindow(QWidget):
             self.toggle_pinned()
         elif event.key() == Qt.Key.Key_L:
             self.toggle_apps_panel()
+        elif event.key() == Qt.Key.Key_F:
+            self.toggle_analysis_panel()
         elif event.key() == Qt.Key.Key_F5:
             self.set_apps_open(True)
             if self.apps_panel.rescan_button.isEnabled():

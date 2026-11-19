@@ -39,6 +39,38 @@ _k32.GetProcessId.restype = wt.DWORD
 _k32.CloseHandle.argtypes = [wt.HANDLE]
 
 
+_k32.WaitForSingleObject.argtypes = [wt.HANDLE, wt.DWORD]
+_k32.WaitForSingleObject.restype = wt.DWORD
+_k32.GetExitCodeProcess.argtypes = [wt.HANDLE, ctypes.POINTER(wt.DWORD)]
+_k32.GetExitCodeProcess.restype = wt.BOOL
+_WAIT_OBJECT_0 = 0
+
+
+def run_elevated_wait(executable: str, parameters: str, timeout_ms: int = 30_000) -> tuple[int | None, int]:
+    """Run elevated and wait: (exit code or None on timeout/failure, error). error 1223 = UAC declined."""
+    info = _SHELLEXECUTEINFOW(
+        cbSize=ctypes.sizeof(_SHELLEXECUTEINFOW),
+        fMask=_SEE_MASK_NOCLOSEPROCESS,
+        lpVerb="runas",
+        lpFile=executable,
+        lpParameters=parameters,
+        nShow=_SW_HIDE,
+    )
+    if not _shell32.ShellExecuteExW(ctypes.byref(info)):
+        return None, ctypes.get_last_error()
+    if not info.hProcess:
+        return None, 0
+    try:
+        if _k32.WaitForSingleObject(info.hProcess, timeout_ms) != _WAIT_OBJECT_0:
+            return None, 0
+        code = wt.DWORD()
+        if not _k32.GetExitCodeProcess(info.hProcess, ctypes.byref(code)):
+            return None, ctypes.get_last_error()
+        return int(code.value), 0
+    finally:
+        _k32.CloseHandle(info.hProcess)
+
+
 def run_elevated(executable: str, parameters: str) -> tuple[int, int]:
     """(pid, error). error 1223 = UAC declined; pid 0 on failure."""
     info = _SHELLEXECUTEINFOW(

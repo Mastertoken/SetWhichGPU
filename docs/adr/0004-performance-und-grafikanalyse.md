@@ -1,6 +1,7 @@
 # ADR-0004: Performance- und Grafikanalyse (rechtes Ausklapp-Panel)
 
-- Status: **vorgeschlagen** (Planung am 2026-11-19, noch nicht freigegeben)
+- Status: **angenommen** am 2026-11-19. Entscheidungen des Projektinhabers: Rechteabfrage **einmalig** beim ersten Öffnen des Analyse-Panels (Taste F oder Button); PresentMon **mitliefern**; externe Werkzeuge für Stufe D **erlaubt**; wichtigste APIs **DX12 und Vulkan** (→ RenderDoc zuerst, PIX für DX12 optional).
+- Umgesetzt: Stufe A (Übersicht) und B (Frames, PresentMon 2.6.0). Offen: D (RenderDoc/PIX), danach C.
 - Kontext: Wunsch nach einem rechts ausklappbaren Panel für Performance- und Grafikanalyse: die einzelnen
   **Passes** auf der Grafikkarte sehen und **framebasierte Performanceanalyse** durchführen.
 

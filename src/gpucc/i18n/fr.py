@@ -131,12 +131,6 @@ CATALOG: dict[str, str] = {
     "Choose a GPU (click or ↑/↓) and apply (Enter).": "Choisissez un GPU (clic ou ↑/↓) et appliquez (Entrée).",
     "📌 Pinned": "📌 Épinglé",
     "📌 Pin": "📌 Épingler",
-    "Pinned · A unpin · L applications · ↑/↓ + Enter choose GPU · Esc closes": (
-        "Épinglé · A détacher · L applications · ↑/↓ + Entrée choisir le GPU · Échap ferme"
-    ),
-    "Esc closes · A pin · L applications · ↑/↓ + Enter GPU · P processes": (
-        "Échap ferme · A épingler · L applications · ↑/↓ + Entrée GPU · P processus"
-    ),
     # --- tray
     "Open overlay": "Ouvrir la superposition",
     "Rescan graphics cards and games": "Actualiser les cartes graphiques et les jeux",
@@ -286,4 +280,89 @@ CATALOG: dict[str, str] = {
     "Please choose an existing program file (.exe).": "Choisissez un fichier programme (.exe) existant.",
     "Loading applications and games …": "Chargement des applications et des jeux …",
     "Close (also when pinned) · Esc": "Fermer (même si épinglé) · Échap",
+    "0.1 % low": "0,1 % bas",
+    "1 % low": "1 % bas",
+    "ANALYSIS": "ANALYSE",
+    "Balanced – neither clearly GPU- nor CPU-limited.": "Équilibré – ni clairement limité par le GPU ni par le CPU.",
+    "Choose a running application (e.g. a game) to analyse its frames.": (
+        "Choisissez une application en cours (p. ex. un jeu) pour analyser ses images."
+    ),
+    "Choose an application (left list or the active window) to analyse it.": (
+        "Choisissez une application (liste à gauche ou fenêtre active) pour l'analyser."
+    ),
+    "Display latency": "Latence d'affichage",
+    "Engines of the application": "Moteurs de l'application",
+    "FPS": "IPS",
+    "Frame analysis": "Analyse des images",
+    "Frame analysis needs a one-time Windows permission (group “Performance Log Users”).": (
+        "L'analyse des images nécessite une autorisation Windows unique (groupe « Utilisateurs du "
+        "journal de performances »)."
+    ),
+    (
+        "Frame analysis reads Windows' own performance events (via PresentMon) – nothing is injected "
+        "into games. Windows allows this only for members of the group “Performance Log "
+        "Users”.\n\nSetWhichGPU can add your account to this group once; Windows asks for administrator "
+        "rights for that. It takes effect after your next Windows sign-in.\n\nSet up now?"
+    ): (
+        "L'analyse des images lit les propres événements de performance de Windows (via PresentMon) – "
+        "rien n'est injecté dans les jeux. Windows ne le permet qu'aux membres du groupe « Utilisateurs "
+        "du journal de performances ».\n\nSetWhichGPU peut ajouter votre compte à ce groupe une seule "
+        "fois ; Windows demande pour cela des droits d'administrateur. Effectif après votre prochaine "
+        "ouverture de session Windows.\n\nConfigurer maintenant ?"
+    ),
+    "Frame time": "Temps d'image",
+    "Frame times (last 300 frames)": "Temps d'image (300 dernières images)",
+    "Frames": "Images",
+    "GPU busy": "GPU occupé",
+    "GPU-limited – the graphics card is the bottleneck.": (
+        "Limité par le GPU – la carte graphique est le goulot d'étranglement."
+    ),
+    "Graphics card now: {values}": "Carte graphique maintenant : {values}",
+    "Not GPU-limited – the GPU waits (CPU, frame limiter or V-Sync).": (
+        "Pas limité par le GPU – le GPU attend (CPU, limiteur d'images ou V-Sync)."
+    ),
+    "Not displayed": "Non affichées",
+    "Overview": "Aperçu",
+    "Performance and frame analysis (F)": "Analyse des performances et des images (F)",
+    "Permission set up – active after your next Windows sign-in (sign out and in again).": (
+        "Autorisation configurée – active après votre prochaine ouverture de session (déconnectez-vous "
+        "puis reconnectez-vous)."
+    ),
+    "Permission set up – frame analysis works after your next Windows sign-in.": (
+        "Autorisation configurée – l'analyse des images fonctionne après votre prochaine ouverture de session."
+    ),
+    "Present mode": "Mode de présentation",
+    "PresentMon could not be started.": "Impossible de démarrer PresentMon.",
+    "PresentMon is missing in this installation – frame analysis is not available.": (
+        "PresentMon est absent de cette installation – l'analyse des images n'est pas disponible."
+    ),
+    "Recording {app} … ({n} frames)": "Enregistrement de {app} … ({n} images)",
+    "Records the frames of {app} from Windows events – nothing is injected into the game.": (
+        "Enregistre les images de {app} à partir d'événements Windows – rien n'est injecté dans le jeu."
+    ),
+    "Save CSV …": "Enregistrer CSV …",
+    "Save frame data": "Enregistrer les données d'images",
+    "Set up permission …": "Configurer l'autorisation …",
+    "The permission could not be set up.": "Impossible de configurer l'autorisation.",
+    "Video memory of the application: {size}": "Mémoire vidéo de l'application : {size}",
+    "White: frame time. Blue: time the GPU was busy with the frame.": (
+        "Blanc : temps d'image. Bleu : temps pendant lequel le GPU travaillait sur l'image."
+    ),
+    "Windows refused the event recording – the permission is not active yet.": (
+        "Windows a refusé l'enregistrement des événements – l'autorisation n'est pas encore active."
+    ),
+    "scale 0–{ms} ms · lines at 60/30 fps": "échelle 0–{ms} ms · lignes à 60/30 IPS",
+    "{app} has exited – recording stopped.": "{app} s'est fermé – enregistrement arrêté.",
+    "{app} is not using a graphics card right now.": "{app} n'utilise aucune carte graphique pour le moment.",
+    "■ Stop": "■ Arrêter",
+    "▬ GPU busy": "▬ GPU occupé",
+    "▬ frame time": "▬ temps d'image",
+    "▶ Start frame analysis": "▶ Démarrer l'analyse des images",
+    "📈 Analysis": "📈 Analyse",
+    "Pinned · A unpin · L applications · F analysis · ↑/↓ + Enter GPU · Esc closes": (
+        "Épinglé · A détacher · L applications · F analyse · ↑/↓ + Entrée GPU · Échap ferme"
+    ),
+    "Esc closes · A pin · L applications · F analysis · ↑/↓ + Enter GPU · P processes": (
+        "Échap ferme · A épingler · L applications · F analyse · ↑/↓ + Entrée GPU · P processus"
+    ),
 }

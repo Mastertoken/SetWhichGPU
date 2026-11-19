@@ -83,6 +83,8 @@ Type: filesandordirs; Name: "{app}\_internal"
 [Files]
 Source: "..\build\pyi-dist\SetWhichGPU\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\build\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Intel PresentMon (MIT) for the frame analysis – the app only starts it if its SHA-256 matches (ADR-0004)
+Source: "..\build\vendor\PresentMon.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 

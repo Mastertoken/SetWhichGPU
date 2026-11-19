@@ -129,12 +129,6 @@ CATALOG: dict[str, str] = {
     "Choose a GPU (click or ↑/↓) and apply (Enter).": "Elige una GPU (clic o ↑/↓) y aplica (Intro).",
     "📌 Pinned": "📌 Fijado",
     "📌 Pin": "📌 Fijar",
-    "Pinned · A unpin · L applications · ↑/↓ + Enter choose GPU · Esc closes": (
-        "Fijado · A soltar · L aplicaciones · ↑/↓ + Intro elegir GPU · Esc cierra"
-    ),
-    "Esc closes · A pin · L applications · ↑/↓ + Enter GPU · P processes": (
-        "Esc cierra · A fijar · L aplicaciones · ↑/↓ + Intro GPU · P procesos"
-    ),
     # --- tray
     "Open overlay": "Abrir superposición",
     "Rescan graphics cards and games": "Volver a buscar tarjetas gráficas y juegos",
@@ -285,4 +279,89 @@ CATALOG: dict[str, str] = {
     "Please choose an existing program file (.exe).": "Elige un archivo de programa (.exe) existente.",
     "Loading applications and games …": "Cargando aplicaciones y juegos …",
     "Close (also when pinned) · Esc": "Cerrar (también si está fijado) · Esc",
+    "0.1 % low": "0,1 % mínimo",
+    "1 % low": "1 % mínimo",
+    "ANALYSIS": "ANÁLISIS",
+    "Balanced – neither clearly GPU- nor CPU-limited.": (
+        "Equilibrado – ni claramente limitado por la GPU ni por la CPU."
+    ),
+    "Choose a running application (e.g. a game) to analyse its frames.": (
+        "Elige una aplicación en ejecución (p. ej. un juego) para analizar sus fotogramas."
+    ),
+    "Choose an application (left list or the active window) to analyse it.": (
+        "Elige una aplicación (lista de la izquierda o la ventana activa) para analizarla."
+    ),
+    "Display latency": "Latencia de pantalla",
+    "Engines of the application": "Motores de la aplicación",
+    "FPS": "FPS",
+    "Frame analysis": "Análisis de fotogramas",
+    "Frame analysis needs a one-time Windows permission (group “Performance Log Users”).": (
+        "El análisis de fotogramas necesita un permiso único de Windows (grupo «Usuarios del registro de rendimiento»)."
+    ),
+    (
+        "Frame analysis reads Windows' own performance events (via PresentMon) – nothing is injected "
+        "into games. Windows allows this only for members of the group “Performance Log "
+        "Users”.\n\nSetWhichGPU can add your account to this group once; Windows asks for administrator "
+        "rights for that. It takes effect after your next Windows sign-in.\n\nSet up now?"
+    ): (
+        "El análisis de fotogramas lee los propios eventos de rendimiento de Windows (mediante "
+        "PresentMon): no se inyecta nada en los juegos. Windows solo lo permite a los miembros del "
+        "grupo «Usuarios del registro de rendimiento».\n\nSetWhichGPU puede añadir tu cuenta a este grupo "
+        "una sola vez; para ello Windows pide derechos de administrador. Surte efecto tras tu próximo "
+        "inicio de sesión en Windows.\n\n¿Configurarlo ahora?"
+    ),
+    "Frame time": "Tiempo de fotograma",
+    "Frame times (last 300 frames)": "Tiempos de fotograma (últimos 300)",
+    "Frames": "Fotogramas",
+    "GPU busy": "GPU ocupada",
+    "GPU-limited – the graphics card is the bottleneck.": (
+        "Limitado por la GPU: la tarjeta gráfica es el cuello de botella."
+    ),
+    "Graphics card now: {values}": "Tarjeta gráfica ahora: {values}",
+    "Not GPU-limited – the GPU waits (CPU, frame limiter or V-Sync).": (
+        "No limitado por la GPU: la GPU espera (CPU, limitador de FPS o V-Sync)."
+    ),
+    "Not displayed": "No mostrados",
+    "Overview": "Resumen",
+    "Performance and frame analysis (F)": "Análisis de rendimiento y fotogramas (F)",
+    "Permission set up – active after your next Windows sign-in (sign out and in again).": (
+        "Permiso configurado: activo tras tu próximo inicio de sesión en Windows (cierra sesión y vuelve a entrar)."
+    ),
+    "Permission set up – frame analysis works after your next Windows sign-in.": (
+        "Permiso configurado: el análisis de fotogramas funciona tras tu próximo inicio de sesión en Windows."
+    ),
+    "Present mode": "Modo de presentación",
+    "PresentMon could not be started.": "No se pudo iniciar PresentMon.",
+    "PresentMon is missing in this installation – frame analysis is not available.": (
+        "Falta PresentMon en esta instalación: el análisis de fotogramas no está disponible."
+    ),
+    "Recording {app} … ({n} frames)": "Grabando {app} … ({n} fotogramas)",
+    "Records the frames of {app} from Windows events – nothing is injected into the game.": (
+        "Registra los fotogramas de {app} a partir de eventos de Windows: no se inyecta nada en el juego."
+    ),
+    "Save CSV …": "Guardar CSV …",
+    "Save frame data": "Guardar datos de fotogramas",
+    "Set up permission …": "Configurar permiso …",
+    "The permission could not be set up.": "No se pudo configurar el permiso.",
+    "Video memory of the application: {size}": "Memoria de vídeo de la aplicación: {size}",
+    "White: frame time. Blue: time the GPU was busy with the frame.": (
+        "Blanco: tiempo de fotograma. Azul: tiempo que la GPU estuvo ocupada con el fotograma."
+    ),
+    "Windows refused the event recording – the permission is not active yet.": (
+        "Windows rechazó el registro de eventos: el permiso aún no está activo."
+    ),
+    "scale 0–{ms} ms · lines at 60/30 fps": "escala 0–{ms} ms · líneas a 60/30 FPS",
+    "{app} has exited – recording stopped.": "{app} se ha cerrado: grabación detenida.",
+    "{app} is not using a graphics card right now.": "{app} no está usando ninguna tarjeta gráfica ahora.",
+    "■ Stop": "■ Detener",
+    "▬ GPU busy": "▬ GPU ocupada",
+    "▬ frame time": "▬ tiempo de fotograma",
+    "▶ Start frame analysis": "▶ Iniciar análisis de fotogramas",
+    "📈 Analysis": "📈 Análisis",
+    "Pinned · A unpin · L applications · F analysis · ↑/↓ + Enter GPU · Esc closes": (
+        "Fijado · A soltar · L aplicaciones · F análisis · ↑/↓ + Intro GPU · Esc cierra"
+    ),
+    "Esc closes · A pin · L applications · F analysis · ↑/↓ + Enter GPU · P processes": (
+        "Esc cierra · A fijar · L aplicaciones · F análisis · ↑/↓ + Intro GPU · P procesos"
+    ),
 }

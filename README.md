@@ -26,6 +26,7 @@ SetWhichGPU is a free, open-source tray app for Windows 11. Press **`Ctrl+Alt+G`
 - **Honest status**: "active", "restart required" (only if the app was started *before* the change) or "the app picks its GPU itself"
 - **Live GPU monitoring** per GPU (load, VRAM, temperature, power) and per application, including CUDA compute, with a **30-second load chart** per GPU: whole card vs. the selected app
 - **Application list**: running apps, background GPU processes, saved preferences, installed programs and Steam, Epic (incl. the new launcher), GOG and Meta Horizon (VR) games – set the GPU *before* starting an app; anything missing can be added by hand (*+ Add program*)
+- **Analysis panel** (`F`): engine load, VRAM and power of an app over up to 5 minutes, and **frame analysis** (FPS, 1 % lows, frame times, GPU- vs. CPU-limited) via the bundled Intel PresentMon – nothing is injected into games
 - **Pin mode**: the overlay stays visible and follows the active application
 - **Optional game mode** for games that ignore the Windows preference (see below)
 - **Local AI models**: shows which models **Ollama, LM Studio/Bionic, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI** (A1111, Forge, SD.Next) and **text-generation-webui** have loaded, next to the measured GPU – asked on `127.0.0.1` only, nothing leaves the PC (can be switched off: tray menu → *Show loaded AI models*)

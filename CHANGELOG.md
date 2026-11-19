@@ -5,6 +5,7 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Analysis panel (right side, button "📈 Analysis" or key F, ADR-0004): **Overview** – engine load (3D/Compute/Copy/Video), video memory and temperature/power of the selected app over 30 s / 2 min / 5 min; **Frames** – live frame analysis with the bundled Intel PresentMon (FPS, 1 %/0.1 % lows, frame time, GPU busy share with "GPU-limited / not GPU-limited" verdict, display latency, dropped frames, present mode, frame-time chart, CSV export). Nothing is injected into games. The required Windows permission (group "Performance Log Users") is requested once, the first time the panel is opened
 - Close button (✕) in the overlay header – closes the overlay also when it is pinned
 - Loading animation in the application list (rotating arrows with the app icon in the middle) while the first scan or list is loading
 - "+ Add program …" in the application list: add any .exe the scanners missed (own group "Added by you", removable via right-click); only existing .exe files are accepted and nothing is started

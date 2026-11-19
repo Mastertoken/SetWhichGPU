@@ -89,6 +89,13 @@ def main() -> int:
     for f in files:
         shutil.copy2(f, target / f.name)
 
+    # Intel PresentMon (frame analysis, bundled as tools/PresentMon.exe)
+    from gpucc.analysis.presentmon import VERSION as PRESENTMON_VERSION
+
+    target = args.out / f"PresentMon-{PRESENTMON_VERSION}"
+    target.mkdir()
+    shutil.copy2(VENDORED / "PresentMon-LICENSE.txt", target / "LICENSE.txt")
+
     for d in sorted(args.out.iterdir()):
         print(f"{d.name}: {', '.join(sorted(p.name for p in d.iterdir()))}")
     return 0

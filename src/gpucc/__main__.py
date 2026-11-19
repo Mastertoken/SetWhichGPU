@@ -27,6 +27,12 @@ def main() -> int:
         from gpucc.uninstall import main as uninstall_main
 
         return uninstall_main(args[1:])
+    from gpucc.analysis.perflog import GRANT_PERFLOG
+
+    if args[:1] == [GRANT_PERFLOG]:  # elevated, once: frame analysis rights (ADR-0004)
+        from gpucc.analysis.perflog import helper_main as perflog_main
+
+        return perflog_main(args[1:])
     return run_app()
 
 

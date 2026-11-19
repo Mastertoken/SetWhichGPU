@@ -128,12 +128,6 @@ CATALOG: dict[str, str] = {
     "Choose a GPU (click or ↑/↓) and apply (Enter).": "GPU wählen (Klick oder ↑/↓) und übernehmen (Enter).",
     "📌 Pinned": "📌 Angeheftet",
     "📌 Pin": "📌 Anheften",
-    "Pinned · A unpin · L applications · ↑/↓ + Enter choose GPU · Esc closes": (
-        "Angeheftet · A lösen · L Anwendungen · ↑/↓ + Enter GPU wählen · Esc schließt"
-    ),
-    "Esc closes · A pin · L applications · ↑/↓ + Enter GPU · P processes": (
-        "Esc schließt · A anheften · L Anwendungen · ↑/↓ + Enter GPU · P Prozesse"
-    ),
     # --- tray
     "Open overlay": "Overlay öffnen",
     "Rescan graphics cards and games": "Grafikkarten und Spiele neu einlesen",
@@ -285,4 +279,85 @@ CATALOG: dict[str, str] = {
     "Please choose an existing program file (.exe).": "Bitte eine vorhandene Programmdatei (.exe) wählen.",
     "Loading applications and games …": "Anwendungen und Spiele werden geladen …",
     "Close (also when pinned) · Esc": "Schließen (auch wenn angeheftet) · Esc",
+    "0.1 % low": "0,1 % Low",
+    "1 % low": "1 % Low",
+    "ANALYSIS": "ANALYSE",
+    "Balanced – neither clearly GPU- nor CPU-limited.": "Ausgeglichen – weder klar GPU- noch CPU-limitiert.",
+    "Choose a running application (e.g. a game) to analyse its frames.": (
+        "Wähle eine laufende Anwendung (z. B. ein Spiel), um ihre Frames zu analysieren."
+    ),
+    "Choose an application (left list or the active window) to analyse it.": (
+        "Wähle eine Anwendung (Liste links oder das aktive Fenster), um sie zu analysieren."
+    ),
+    "Display latency": "Anzeige-Latenz",
+    "Engines of the application": "Engines der Anwendung",
+    "FPS": "FPS",
+    "Frame analysis": "Frame-Analyse",
+    "Frame analysis needs a one-time Windows permission (group “Performance Log Users”).": (
+        "Die Frame-Analyse braucht einmalig eine Windows-Berechtigung (Gruppe „Leistungsprotokollbenutzer“)."
+    ),
+    (
+        "Frame analysis reads Windows' own performance events (via PresentMon) – nothing is injected "
+        "into games. Windows allows this only for members of the group “Performance Log "
+        "Users”.\n\nSetWhichGPU can add your account to this group once; Windows asks for administrator "
+        "rights for that. It takes effect after your next Windows sign-in.\n\nSet up now?"
+    ): (
+        "Die Frame-Analyse liest Windows' eigene Leistungsereignisse (über PresentMon) – in Spiele wird "
+        "nichts eingeschleust. Windows erlaubt das nur Mitgliedern der Gruppe "
+        "„Leistungsprotokollbenutzer“.\n\nSetWhichGPU kann dein Konto einmalig zu dieser Gruppe "
+        "hinzufügen; Windows fragt dafür nach Administratorrechten. Wirksam wird es nach deiner "
+        "nächsten Windows-Anmeldung.\n\nJetzt einrichten?"
+    ),
+    "Frame time": "Frametime",
+    "Frame times (last 300 frames)": "Frametimes (letzte 300 Frames)",
+    "Frames": "Frames",
+    "GPU busy": "GPU-Last",
+    "GPU-limited – the graphics card is the bottleneck.": "GPU-limitiert – die Grafikkarte ist der Engpass.",
+    "Graphics card now: {values}": "Grafikkarte jetzt: {values}",
+    "Not GPU-limited – the GPU waits (CPU, frame limiter or V-Sync).": (
+        "Nicht GPU-limitiert – die GPU wartet (CPU, Frame-Limiter oder V-Sync)."
+    ),
+    "Not displayed": "Nicht angezeigt",
+    "Overview": "Übersicht",
+    "Performance and frame analysis (F)": "Performance- und Frame-Analyse (F)",
+    "Permission set up – active after your next Windows sign-in (sign out and in again).": (
+        "Berechtigung eingerichtet – aktiv nach deiner nächsten Windows-Anmeldung (ab- und wieder anmelden)."
+    ),
+    "Permission set up – frame analysis works after your next Windows sign-in.": (
+        "Berechtigung eingerichtet – die Frame-Analyse funktioniert nach deiner nächsten Windows-Anmeldung."
+    ),
+    "Present mode": "Present-Modus",
+    "PresentMon could not be started.": "PresentMon konnte nicht gestartet werden.",
+    "PresentMon is missing in this installation – frame analysis is not available.": (
+        "PresentMon fehlt in dieser Installation – die Frame-Analyse ist nicht verfügbar."
+    ),
+    "Recording {app} … ({n} frames)": "Zeichne {app} auf … ({n} Frames)",
+    "Records the frames of {app} from Windows events – nothing is injected into the game.": (
+        "Zeichnet die Frames von {app} aus Windows-Ereignissen auf – ins Spiel wird nichts eingeschleust."
+    ),
+    "Save CSV …": "CSV speichern …",
+    "Save frame data": "Frame-Daten speichern",
+    "Set up permission …": "Berechtigung einrichten …",
+    "The permission could not be set up.": "Die Berechtigung konnte nicht eingerichtet werden.",
+    "Video memory of the application: {size}": "Grafikspeicher der Anwendung: {size}",
+    "White: frame time. Blue: time the GPU was busy with the frame.": (
+        "Weiß: Frametime. Blau: Zeit, in der die GPU mit dem Frame beschäftigt war."
+    ),
+    "Windows refused the event recording – the permission is not active yet.": (
+        "Windows hat die Ereignisaufzeichnung verweigert – die Berechtigung ist noch nicht aktiv."
+    ),
+    "scale 0–{ms} ms · lines at 60/30 fps": "Skala 0–{ms} ms · Linien bei 60/30 FPS",
+    "{app} has exited – recording stopped.": "{app} wurde beendet – Aufzeichnung gestoppt.",
+    "{app} is not using a graphics card right now.": "{app} nutzt gerade keine Grafikkarte.",
+    "■ Stop": "■ Stoppen",
+    "▬ GPU busy": "▬ GPU-Last",
+    "▬ frame time": "▬ Frametime",
+    "▶ Start frame analysis": "▶ Frame-Analyse starten",
+    "📈 Analysis": "📈 Analyse",
+    "Pinned · A unpin · L applications · F analysis · ↑/↓ + Enter GPU · Esc closes": (
+        "Angeheftet · A lösen · L Anwendungen · F Analyse · ↑/↓ + Enter GPU · Esc schließt"
+    ),
+    "Esc closes · A pin · L applications · F analysis · ↑/↓ + Enter GPU · P processes": (
+        "Esc schließt · A anheften · L Anwendungen · F Analyse · ↑/↓ + Enter GPU · P Prozesse"
+    ),
 }

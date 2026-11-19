@@ -25,7 +25,8 @@ Windows-11-Tray-Anwendung (Python 3.13, PySide6), die per globalem Hotkey ein Ov
 
 ## 4. Sicherheitsrichtlinien (nicht verhandelbar)
 
-- Die Anwendung läuft **ohne Administratorrechte**. Keine Funktion bauen, die Elevation erfordert – **einzige Ausnahme: der Spielmodus nach ADR-0002.**
+- Die Anwendung läuft **ohne Administratorrechte**. Keine Funktion bauen, die Elevation erfordert – **Ausnahmen: der Spielmodus nach ADR-0002 und die einmalige Aufnahme des Benutzers in die Gruppe „Leistungsprotokollbenutzer“ (S-1-5-32-559) für die Frame-Analyse nach ADR-0004** (Helfer `--grant-perflog`, nimmt nur eine validierte Benutzer-SID an, ändert sonst nichts).
+- **Nie in fremde Prozesse einklinken.** Für benannte Render-Passes (ADR-0004, Stufe D) darf SetWhichGPU ein vom Nutzer installiertes Werkzeug (RenderDoc, PIX) **nur auf ausdrücklichen Klick** starten und dessen Aufnahmen lesen; das Werkzeug klinkt sich ein, nicht SetWhichGPU. Mitgelieferte Fremd-Binärdateien (PresentMon) nur mit fest hinterlegter SHA-256 starten.
 - **Keine** Treibermanipulation, keine NVIDIA-/Intel-/AMD-Treiberprofile, kein Übertakten. Geräte deaktivieren nur im Spielmodus (ADR-0002):
   - ausschließlich über `pnputil /disable-device` bzw. `/enable-device`, **niemals `/force`**, niemals `/remove-device`;
   - nur eine GPU **ohne angeschlossenen Monitor**, nie die letzte physische GPU, nie während auf ihr Compute-/Render-Last läuft;

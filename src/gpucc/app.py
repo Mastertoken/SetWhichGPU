@@ -40,6 +40,7 @@ from gpucc.monitoring.worker import INTERVAL_ACTIVE_MS, INTERVAL_IDLE_MS, Monito
 from gpucc.platform.win32 import process, user32
 from gpucc.platform.win32.registry import AutostartEntry
 from gpucc.profiles.store import ProfileStore
+from gpucc.ui.analysis_controller import AnalysisController
 from gpucc.ui.hotkey import HotkeyService
 from gpucc.ui.overlay.applist import background_candidates, build_app_list, valid_program_path, with_game
 from gpucc.ui.overlay.viewmodel import build_state
@@ -48,7 +49,7 @@ from gpucc.ui.tray import TrayService
 
 log = logging.getLogger(__name__)
 
-HISTORY_LENGTH = 40  # ≥ 30 s of 1-s samples for the load charts (attribution uses only the last 3)
+HISTORY_LENGTH = 330  # ≥ 5 min of 1-s samples for the charts/analysis (attribution uses only the last 3)
 TREE_REFRESH_EVERY = 5  # snapshots
 FOLLOW_DEBOUNCE_MS = 200
 LIST_REFRESH_EVERY = 3  # snapshots (~3 s while the overlay is open)
@@ -186,6 +187,9 @@ class Controller(QObject):
         self.overlay.program_chosen.connect(self.add_program)
         self.overlay.custom_remove_requested.connect(self.remove_program)
         self.overlay.apps_panel_toggled.connect(self._on_apps_panel_toggled)
+        # Analysis panel (ADR-0004)
+        self.analysis = AnalysisController(self)
+        self.overlay.analysis_toggled.connect(self.analysis.on_toggled)
         self.hotkeys = HotkeyService()
         app.installNativeEventFilter(self.hotkeys.native_filter)
         self.hotkeys.hotkey_pressed.connect(self.toggle_overlay)
@@ -255,6 +259,7 @@ class Controller(QObject):
         self.tray.hide()
         self.monitoring.shutdown()
         self.localai.shutdown()
+        self.analysis.shutdown()
         self._store.close()
         self._app.quit()
 
@@ -716,6 +721,7 @@ class Controller(QObject):
             if self.overlay.isVisible():
                 self._refresh_process_tree()
                 self._query_localai()
+                self.analysis.refresh()
                 self._render()
                 self._snapshots_since_list += 1
                 if self._snapshots_since_list >= LIST_REFRESH_EVERY:
