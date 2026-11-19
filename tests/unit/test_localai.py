@@ -9,6 +9,7 @@ import pytest
 from gpucc.core.models import Confidence, ObservedGpu, ProcessGpuSummary, TargetApp
 from gpucc.localai import client
 from gpucc.localai.runtimes import (
+    BIONIC,
     LM_STUDIO,
     MAX_NAME_LEN,
     OLLAMA,
@@ -112,7 +113,22 @@ def test_port_from_environment(value, port):
     assert port_from({"OLLAMA_HOST": value}, "OLLAMA_HOST", 11434) == port
 
 
+def test_port_from_app_settings(tmp_path):
+    cfg = tmp_path / BIONIC.config_file
+    assert BIONIC.port(env={}, home=tmp_path) == 1235  # no settings file yet
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text('{"port": 4321, "networkInterface": "127.0.0.1"}', encoding="utf-8")
+    assert BIONIC.port(env={}, home=tmp_path) == 4321
+    assert BIONIC.port(env={"GPUCC_BIONIC_PORT": "5555"}, home=tmp_path) == 5555  # explicit override wins
+    for broken in ('{"port": "1"}', '{"port": 70000}', "[1]", "not json"):
+        cfg.write_text(broken, encoding="utf-8")
+        assert BIONIC.port(env={}, home=tmp_path) == 1235
+
+
 def test_runtime_for_process_names():
+    assert runtime_for(r"C:\Users\x\AppData\Local\Programs\Bionic\Bionic.exe") is BIONIC
+    assert runtime_for(r"C:\Users\x\AppData\Local\Programs\Ollama\lib\ollama\llama-server.exe") is OLLAMA
+    assert runtime_for(r"D:\llama.cpp\llama-server.exe") is None  # plain llama.cpp is not Ollama
     assert runtime_for("ollama.exe") is OLLAMA
     assert runtime_for("Ollama App.exe") is OLLAMA
     assert runtime_for("LM Studio.exe") is LM_STUDIO

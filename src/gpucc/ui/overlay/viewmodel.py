@@ -21,7 +21,7 @@ from gpucc.core.models import (
     TargetApp,
 )
 from gpucc.i18n import decimal_separator, tr
-from gpucc.localai.runtimes import ModelReport
+from gpucc.localai.runtimes import RUNTIMES, ModelReport
 
 
 class Level(StrEnum):
@@ -309,10 +309,12 @@ def model_lines(
     if not report.reachable:
         if report.problem == "unauthorized":
             return (tr("The local API requires an API token – not supported."),)
-        if report.runtime == "LM Studio":
+        if any(r.name == report.runtime and r.has_server_switch for r in RUNTIMES):
             return (
                 tr(
-                    "LM Studio API not reachable (port {port}) – start the local server in LM Studio.", port=report.port
+                    "{runtime} API not reachable (port {port}) – start the local server in {runtime}.",
+                    runtime=report.runtime,
+                    port=report.port,
                 ),
             )
         return (tr("{runtime} API not reachable (port {port}).", runtime=report.runtime, port=report.port),)

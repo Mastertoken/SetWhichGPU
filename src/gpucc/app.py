@@ -272,7 +272,7 @@ class Controller(QObject):
 
     def _ai_runtime(self) -> str | None:
         t = self._target
-        runtime = runtime_for(t.exe_name) if t is not None and t.running and t.exe_path else None
+        runtime = runtime_for(t.exe_path) if t is not None and t.running and t.exe_path else None
         return runtime.name if runtime else None
 
     def _query_localai(self, force: bool = False) -> None:

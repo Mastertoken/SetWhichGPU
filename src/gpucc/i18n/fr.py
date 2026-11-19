@@ -242,8 +242,8 @@ CATALOG: dict[str, str] = {
     ),
     "Asking the runtime …": "Interrogation de l'environnement …",
     "The local API requires an API token – not supported.": "L'API locale exige un jeton – non pris en charge.",
-    "LM Studio API not reachable (port {port}) – start the local server in LM Studio.": (
-        "API de LM Studio injoignable (port {port}) – démarrez le serveur local dans LM Studio."
+    "{runtime} API not reachable (port {port}) – start the local server in {runtime}.": (
+        "API de {runtime} injoignable (port {port}) – démarrez le serveur local dans {runtime}."
     ),
     "{runtime} API not reachable (port {port}).": "API de {runtime} injoignable (port {port}).",
     "No model loaded": "Aucun modèle chargé",

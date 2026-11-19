@@ -7,10 +7,12 @@ untrusted: only the expected fields are read, strings are sanitised and lengths 
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 
 MAX_NAME_LEN = 80
 MAX_MODELS = 16
@@ -45,9 +47,27 @@ class Runtime:
     default_port: int
     port_env: str  # environment variable that may name another port (host part is ignored)
     endpoints: tuple[tuple[str, Parser], ...]  # tried in order; 404 → next one
+    config_file: str = ""  # JSON file below the user profile with a "port" field (LM Studio / Bionic)
+    has_server_switch: bool = False  # the local server must be started in the app first
 
-    def port(self, env: Mapping[str, str] | None = None) -> int:
-        return port_from(env if env is not None else os.environ, self.port_env, self.default_port)
+    def port(self, env: Mapping[str, str] | None = None, home: Path | None = None) -> int:
+        env = env if env is not None else os.environ
+        if env.get(self.port_env):
+            return port_from(env, self.port_env, self.default_port)
+        if self.config_file:
+            return port_from_config((home or Path.home()) / self.config_file, self.default_port)
+        return self.default_port
+
+
+def port_from_config(path: Path, default: int) -> int:
+    """{"port": 1235, ...} as written by LM Studio / Bionic for their local server."""
+    try:
+        if path.stat().st_size > 64 * 1024:
+            return default
+        port = json.loads(path.read_text(encoding="utf-8")).get("port")
+    except (OSError, ValueError, AttributeError):
+        return default
+    return port if isinstance(port, int) and not isinstance(port, bool) and 0 < port < 65536 else default
 
 
 def port_from(env: Mapping[str, str], name: str, default: int) -> int:
@@ -145,16 +165,32 @@ OLLAMA = Runtime(
     port_env="OLLAMA_HOST",
     endpoints=(("/api/ps", parse_ollama_ps),),
 )
+_LMSTUDIO_API = (("/api/v1/models", parse_lmstudio_v1), ("/api/v0/models", parse_lmstudio_v0))
 LM_STUDIO = Runtime(
     name="LM Studio",
     exe_names=frozenset({"lm studio.exe", "lms.exe", "llmster.exe"}),
     default_port=1234,
     port_env="GPUCC_LMSTUDIO_PORT",
-    endpoints=(("/api/v1/models", parse_lmstudio_v1), ("/api/v0/models", parse_lmstudio_v0)),
+    endpoints=_LMSTUDIO_API,
+    config_file=".lmstudio/.internal/http-server-config.json",
+    has_server_switch=True,
 )
-RUNTIMES = (OLLAMA, LM_STUDIO)
+BIONIC = Runtime(  # LM Studio's newer app; same API, own settings folder and port
+    name="Bionic",
+    exe_names=frozenset({"bionic.exe"}),
+    default_port=1235,
+    port_env="GPUCC_BIONIC_PORT",
+    endpoints=_LMSTUDIO_API,
+    config_file=".lmstudio/apps/bionic/.internal/http-server-config.json",
+    has_server_switch=True,
+)
+RUNTIMES = (OLLAMA, LM_STUDIO, BIONIC)
 
 
-def runtime_for(exe_name: str | None) -> Runtime | None:
-    name = (exe_name or "").lower()
+def runtime_for(exe_path: str | None) -> Runtime | None:
+    """By process name; Ollama's model runner is a llama-server.exe inside the Ollama folder."""
+    path = (exe_path or "").replace("/", "\\").lower()
+    name = path.rsplit("\\", 1)[-1]
+    if name == "llama-server.exe" and "\\ollama\\" in path:
+        return OLLAMA
     return next((r for r in RUNTIMES if name in r.exe_names), None)

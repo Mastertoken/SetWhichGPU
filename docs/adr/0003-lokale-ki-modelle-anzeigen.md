@@ -26,6 +26,11 @@ Eine eng begrenzte, **standardmäßig ausgeschaltete** Abfrage der lokalen APIs 
    SetWhichGPU gemessen und als „gemessen“ gekennzeichnet. Bei mehreren GPUs wird die gemessene Verteilung
    gezeigt, keine geratene Zuordnung Modell → GPU.
 
+Erkennung: Prozessname (`ollama.exe`, `LM Studio.exe`, `Bionic.exe`, …); Ollama ab 0.40 rechnet in einem
+`llama-server.exe` im Ollama-Ordner. Port: Umgebungsvariable, sonst die `http-server-config.json` von
+LM Studio/Bionic unter `~/.lmstudio`, sonst Standard (11434 / 1234 / 1235). Getestet am 2026-11-19 mit
+Ollama 0.40.16 und Bionic.
+
 ComfyUI wird nicht unterstützt: es bietet keine Abfrage des geladenen Modells.
 
 ## Folgen
