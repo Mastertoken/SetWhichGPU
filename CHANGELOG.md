@@ -5,7 +5,7 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ## [Unreleased]
 
 ### Added
-- Loaded local AI models (optional, off by default): the overlay lists the models Ollama, LM Studio and Bionic have loaded, with size and GPU/CPU split, next to the measured GPU – queried on 127.0.0.1 only (ADR-0003)
+- Loaded local AI models (on by default, can be switched off in the tray menu): the overlay lists the models of Ollama, LM Studio/Bionic, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI (A1111, Forge, SD.Next) and text-generation-webui next to the measured GPU – queried on 127.0.0.1 only (ADR-0003)
 - Release workflow: the installer is built by GitHub Actions (manual run or tag `vX.Y.Z`); a tag creates a draft release with the installer and its SHA-256 checksum
 
 ## [0.1.0] – 2026-11-18

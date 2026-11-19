@@ -161,7 +161,8 @@ class Controller(QObject):
         self._app_targets: dict[str, TargetApp] = {}
         self._snapshots_since_list = 0
         # Local AI runtimes (ADR-0003): opt-in, only queried while the overlay shows such a runtime.
-        self._localai_enabled = store.get_setting(LOCALAI_SETTING) == "1"
+        # On unless switched off in the tray menu ("" was the "off" value of early builds).
+        self._localai_enabled = store.get_setting(LOCALAI_SETTING) in (None, "1")
         self._ai_report: ModelReport | None = None
         self._snapshots_since_ai = 0
         self.localai = LocalAiThread()
@@ -263,7 +264,7 @@ class Controller(QObject):
 
     def set_localai(self, enabled: bool) -> None:
         self._localai_enabled = enabled
-        self._store.set_setting(LOCALAI_SETTING, "1" if enabled else "")
+        self._store.set_setting(LOCALAI_SETTING, "1" if enabled else "0")
         log.info("local AI models", extra={"fields": {"enabled": enabled}})
         self._ai_report = None
         if self.overlay.isVisible():

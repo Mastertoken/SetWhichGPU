@@ -46,7 +46,7 @@ class TrayService(QObject):
     localai_toggled = Signal(bool)
 
     def __init__(
-        self, hotkey_text: str, autostart_available: bool = True, language: str = "system", localai: bool = False
+        self, hotkey_text: str, autostart_available: bool = True, language: str = "system", localai: bool = True
     ) -> None:
         super().__init__()
         from gpucc.ui.icons import app_icon
@@ -63,8 +63,10 @@ class TrayService(QObject):
         self._autostart.setCheckable(True)
         self._autostart.setEnabled(autostart_available)
         self._autostart.toggled.connect(self.autostart_toggled)
-        self._localai = QAction(tr("Show loaded AI models (Ollama, LM Studio)"))
-        self._localai.setToolTip(tr("Asks Ollama and LM Studio on this PC (localhost only) which models are loaded"))
+        self._localai = QAction(tr("Show loaded AI models (Ollama, LM Studio, …)"))
+        self._localai.setToolTip(
+            tr("Asks local AI programs on this PC (localhost only) which models are loaded – nothing leaves the PC")
+        )
         self._localai.setCheckable(True)
         self._localai.setChecked(localai)
         self._localai.toggled.connect(self.localai_toggled)

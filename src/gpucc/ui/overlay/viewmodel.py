@@ -307,9 +307,20 @@ def model_lines(
     if report is None:
         return (tr("Asking the runtime …"),)
     if not report.reachable:
+        runtime = next((r for r in RUNTIMES if r.name == report.runtime), None)
         if report.problem == "unauthorized":
             return (tr("The local API requires an API token – not supported."),)
-        if any(r.name == report.runtime and r.has_server_switch for r in RUNTIMES):
+        if report.problem in ("not_found", "invalid"):
+            if runtime is not None and runtime.api_flag:
+                return (
+                    tr(
+                        "{runtime} is running without its API – start it with {flag} to see the model.",
+                        runtime=report.runtime,
+                        flag=runtime.api_flag,
+                    ),
+                )
+            return (tr("{runtime} gave an unexpected answer (port {port}).", runtime=report.runtime, port=report.port),)
+        if runtime is not None and runtime.has_server_switch:
             return (
                 tr(
                     "{runtime} API not reachable (port {port}) – start the local server in {runtime}.",

@@ -11,15 +11,18 @@ import json
 import logging
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from typing import Any
 
-from gpucc.localai.runtimes import ModelReport, Runtime
+from gpucc.localai.runtimes import LoadedModel, ModelReport, Runtime
 
 log = logging.getLogger(__name__)
 
 LOOPBACK = ("127.0.0.1", "[::1]")
 TIMEOUT_S = 1.0
 MAX_ANSWER_BYTES = 1 << 20
+# When several ports fail, report the most informative problem.
+_RANK = {"unreachable": 0, "invalid": 1, "not_found": 2, "unauthorized": 3}
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -43,26 +46,34 @@ def fetch_json(host: str, port: int, path: str, timeout: float = TIMEOUT_S) -> o
     return json.loads(raw)
 
 
-def query(runtime: Runtime, port: int | None = None) -> ModelReport:
-    port = port or runtime.port()
+def _ask(runtime: Runtime, host: str, port: int) -> tuple[LoadedModel, ...] | str:
+    """The loaded models, or the problem: unreachable / invalid / not_found / unauthorized."""
     problem = "unreachable"
-    for host in LOOPBACK:
-        for path, parse in runtime.endpoints:
-            try:
-                models = parse(fetch_json(host, port, path))
-            except urllib.error.HTTPError as e:
-                if e.code in (401, 403):
-                    problem = "unauthorized"
-                    break
-                problem = "invalid"
-                continue  # e.g. 404: older/newer API version → next endpoint
-            except (OSError, ValueError) as e:  # URLError/timeouts are OSErrors; ValueError = bad JSON
-                if isinstance(e, ValueError):
-                    problem = "invalid"
-                    continue
-                break  # nothing listening on this address → try the next loopback address
-            return ModelReport(runtime.name, True, models, port=port)
-        if problem != "unreachable":
-            break
-    log.debug("local AI runtime not answering", extra={"fields": {"runtime": runtime.name, "problem": problem}})
-    return ModelReport(runtime.name, False, problem=problem, port=port)
+    for path, parse in runtime.endpoints:
+        try:
+            return parse(fetch_json(host, port, path))
+        except urllib.error.HTTPError as e:  # before OSError: HTTPError is one
+            if e.code in (401, 403):
+                return "unauthorized"
+            problem = "not_found" if e.code == 404 else "invalid"  # 404: other API version → next endpoint
+        except ValueError:  # bad JSON or an answer of the wrong shape
+            problem = "invalid"
+        except OSError:  # refused / timeout: nothing (more) to ask here
+            return problem
+    return problem
+
+
+def query(runtime: Runtime, ports: Sequence[int] | None = None) -> ModelReport:
+    ports = tuple(ports or runtime.ports())
+    worst, worst_port = "unreachable", ports[0]
+    for port in ports:
+        for host in LOOPBACK:
+            result = _ask(runtime, host, port)
+            if isinstance(result, tuple):
+                return ModelReport(runtime.name, True, result, port=port)
+            if result != "unreachable":
+                if _RANK[result] > _RANK[worst]:
+                    worst, worst_port = result, port
+                break  # something answers on this port – the other loopback address won't differ
+    log.debug("local AI runtime not answering", extra={"fields": {"runtime": runtime.name, "problem": worst}})
+    return ModelReport(runtime.name, False, problem=worst, port=worst_port)

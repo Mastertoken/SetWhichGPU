@@ -251,8 +251,13 @@ CATALOG: dict[str, str] = {
     "Runs on {gpu} (measured)": "Se ejecuta en {gpu} (medido)",
     "Spread over several GPUs (measured): {split}": "Repartido en varias GPU (medido): {split}",
     "No GPU usage measured right now": "Ahora mismo no se mide uso de GPU",
-    "Show loaded AI models (Ollama, LM Studio)": "Mostrar modelos de IA cargados (Ollama, LM Studio)",
-    "Asks Ollama and LM Studio on this PC (localhost only) which models are loaded": (
-        "Pregunta a Ollama y LM Studio en este PC (solo localhost) qué modelos están cargados"
+    "Show loaded AI models (Ollama, LM Studio, …)": "Mostrar modelos de IA cargados (Ollama, LM Studio, …)",
+    "Asks local AI programs on this PC (localhost only) which models are loaded – nothing leaves the PC": (
+        "Pregunta a los programas de IA locales de este PC (solo localhost) qué modelos están "
+        "cargados – nada sale del PC"
     ),
+    "{runtime} is running without its API – start it with {flag} to see the model.": (
+        "{runtime} se ejecuta sin API – inícialo con {flag} para ver el modelo."
+    ),
+    "{runtime} gave an unexpected answer (port {port}).": "{runtime} dio una respuesta inesperada (puerto {port}).",
 }

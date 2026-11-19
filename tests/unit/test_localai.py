@@ -10,14 +10,24 @@ from gpucc.core.models import Confidence, ObservedGpu, ProcessGpuSummary, Target
 from gpucc.localai import client
 from gpucc.localai.runtimes import (
     BIONIC,
+    KOBOLDCPP,
+    LEMONADE,
+    LLAMA_CPP,
     LM_STUDIO,
     MAX_NAME_LEN,
     OLLAMA,
+    SD_WEBUI,
+    TEXTGEN_WEBUI,
     LoadedModel,
     ModelReport,
+    parse_koboldcpp_model,
+    parse_lemonade_health,
+    parse_llamacpp_models,
     parse_lmstudio_v0,
     parse_lmstudio_v1,
     parse_ollama_ps,
+    parse_sd_webui_options,
+    parse_textgen_model_info,
     port_from,
     runtime_for,
 )
@@ -115,25 +125,93 @@ def test_port_from_environment(value, port):
 
 def test_port_from_app_settings(tmp_path):
     cfg = tmp_path / BIONIC.config_file
-    assert BIONIC.port(env={}, home=tmp_path) == 1235  # no settings file yet
+    assert BIONIC.ports(env={}, home=tmp_path) == (1235,)  # no settings file yet
     cfg.parent.mkdir(parents=True)
     cfg.write_text('{"port": 4321, "networkInterface": "127.0.0.1"}', encoding="utf-8")
-    assert BIONIC.port(env={}, home=tmp_path) == 4321
-    assert BIONIC.port(env={"GPUCC_BIONIC_PORT": "5555"}, home=tmp_path) == 5555  # explicit override wins
+    assert BIONIC.ports(env={}, home=tmp_path) == (4321,)
+    assert BIONIC.ports(env={"GPUCC_BIONIC_PORT": "5555"}, home=tmp_path) == (5555,)  # explicit override wins
     for broken in ('{"port": "1"}', '{"port": 70000}', "[1]", "not json"):
         cfg.write_text(broken, encoding="utf-8")
-        assert BIONIC.port(env={}, home=tmp_path) == 1235
+        assert BIONIC.ports(env={}, home=tmp_path) == (1235,)
 
 
 def test_runtime_for_process_names():
     assert runtime_for(r"C:\Users\x\AppData\Local\Programs\Bionic\Bionic.exe") is BIONIC
     assert runtime_for(r"C:\Users\x\AppData\Local\Programs\Ollama\lib\ollama\llama-server.exe") is OLLAMA
-    assert runtime_for(r"D:\llama.cpp\llama-server.exe") is None  # plain llama.cpp is not Ollama
+    assert runtime_for(r"D:\llama.cpp\llama-server.exe") is LLAMA_CPP  # plain llama.cpp is not Ollama
     assert runtime_for("ollama.exe") is OLLAMA
     assert runtime_for("Ollama App.exe") is OLLAMA
     assert runtime_for("LM Studio.exe") is LM_STUDIO
     assert runtime_for("python.exe") is None
     assert runtime_for(None) is None
+
+
+@pytest.mark.parametrize(
+    ("path", "runtime"),
+    [
+        (r"C:\Users\x\AppData\Local\lemonade_server\bin\llamacpp\vulkan\llama-server.exe", LEMONADE),
+        (r"C:\Program Files\Lemonade Server\lemonade-server.exe", LEMONADE),
+        (r"D:\Tools\koboldcpp-nocuda.exe", KOBOLDCPP),
+        (r"D:\Tools\koboldcpp.exe", KOBOLDCPP),
+        (r"E:\stable-diffusion-webui\venv\Scripts\python.exe", SD_WEBUI),
+        (r"E:\webui_forge_cu121_torch231\system\python\python.exe", SD_WEBUI),
+        (r"E:\StabilityMatrix\Packages\Stable Diffusion WebUI reForge\venv\Scripts\python.exe", SD_WEBUI),
+        (r"E:\automatic\venv\Scripts\python.exe", SD_WEBUI),
+        (r"E:\text-generation-webui\installer_files\env\python.exe", TEXTGEN_WEBUI),
+        (r"E:\ComfyUI\venv\Scripts\python.exe", None),  # no query for the loaded model exists
+        (r"C:\Python313\python.exe", None),
+    ],
+)
+def test_more_runtimes_by_path(path, runtime):
+    assert runtime_for(path) is runtime
+
+
+def test_parse_llamacpp_models_and_router_mode():
+    single = {
+        "object": "list",
+        "data": [{"id": "../models/Llama-3.1-8B-Q4_K_M.gguf", "meta": {"n_params": 8030261248, "size": 4920733696}}],
+    }
+    assert parse_llamacpp_models(single) == (LoadedModel("Llama-3.1-8B-Q4_K_M", "8.0B", 4920733696),)
+    router = {
+        "data": [
+            {"id": "ggml-org/gemma-3-4b-it-GGUF:Q4_K_M", "status": {"value": "loaded"}},
+            {"id": "other", "status": {"value": "unloaded"}},
+            {"id": "third", "status": {"value": "loading"}},
+        ]
+    }
+    assert [m.name for m in parse_llamacpp_models(router)] == ["gemma-3-4b-it-GGUF:Q4_K_M"]
+
+
+def test_parse_koboldcpp():
+    assert parse_koboldcpp_model({"result": "koboldcpp/Mistral-7B-Q5"}) == (LoadedModel("Mistral-7B-Q5"),)
+    assert parse_koboldcpp_model({"result": "inactive"}) == ()
+
+
+def test_parse_lemonade():
+    health = {
+        "status": "ok",
+        "model_loaded": "Qwen3-0.6B-GGUF",
+        "all_models_loaded": [
+            {"model_name": "Qwen3-0.6B-GGUF", "type": "llm", "device": "gpu", "loaded": True, "pid": 1},
+            {"model_name": "nomic-embed-text-v1-GGUF", "type": "embedding", "device": "gpu", "loaded": True},
+        ],
+    }
+    assert parse_lemonade_health(health) == (
+        LoadedModel("Qwen3-0.6B-GGUF", "GPU"),
+        LoadedModel("nomic-embed-text-v1-GGUF", "embedding · GPU"),
+    )
+    assert parse_lemonade_health({"status": "ok", "model_loaded": "Old-Model"}) == (LoadedModel("Old-Model"),)
+    assert parse_lemonade_health({"status": "ok", "model_loaded": None}) == ()
+
+
+def test_parse_sd_webui_and_textgen():
+    options = {"sd_model_checkpoint": "sdxl\\juggernautXL_v9.safetensors [c9e3e68f89]", "CLIP_stop_at_last_layers": 1}
+    assert parse_sd_webui_options(options) == (LoadedModel("juggernautXL_v9", "Checkpoint"),)
+    assert parse_sd_webui_options({"sd_model_checkpoint": None}) == ()
+    assert parse_textgen_model_info({"model_name": "Qwen2.5-7B", "lora_names": ["style"]}) == (
+        LoadedModel("Qwen2.5-7B", "LoRA: style"),
+    )
+    assert parse_textgen_model_info({"model_name": "None", "lora_names": []}) == ()
 
 
 # ----------------------------------------------------------------------------- client
@@ -174,38 +252,62 @@ def serve(httpd, routes):
 def test_query_ollama(server, monkeypatch):
     monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:1")  # proxies are never used
     port = serve(server, {"/api/ps": (200, OLLAMA_PS)})
-    report = client.query(OLLAMA, port)
+    report = client.query(OLLAMA, [port])
     assert report.reachable and report.models[0].name == "gemma4"
 
 
 def test_lmstudio_falls_back_to_v0(server):
     port = serve(server, {"/api/v0/models": (200, LMSTUDIO_V0)})
-    report = client.query(LM_STUDIO, port)
+    report = client.query(LM_STUDIO, [port])
     assert report.reachable and report.models[0].name == "qwen2-vl-7b-instruct"
 
 
 def test_token_protected_api(server):
     port = serve(server, {"/api/v1/models": (401, {"error": "unauthorized"})})
-    assert client.query(LM_STUDIO, port) == ModelReport("LM Studio", False, problem="unauthorized", port=port)
+    assert client.query(LM_STUDIO, [port]) == ModelReport("LM Studio", False, problem="unauthorized", port=port)
 
 
 def test_redirects_are_not_followed(server):
     port = serve(server, {"/api/ps": (302, {})})
-    report = client.query(OLLAMA, port)
+    report = client.query(OLLAMA, [port])
     assert not report.reachable and report.problem == "invalid"
 
 
 def test_invalid_json(server):
     port = serve(server, {"/api/ps": (200, b"<html>not json</html>")})
-    assert client.query(OLLAMA, port).problem == "invalid"
+    assert client.query(OLLAMA, [port]).problem == "invalid"
 
 
 def test_nothing_listening(server):
     port = server.server_address[1]
     server.shutdown()
     server.server_close()
-    report = client.query(OLLAMA, port)
+    report = client.query(OLLAMA, [port])
     assert not report.reachable and report.problem == "unreachable"
+
+
+def test_second_default_port_is_tried(server):
+    port = serve(server, {"/api/v1/health": (200, {"status": "ok", "model_loaded": "M"})})
+    closed = _free_port()
+    report = client.query(LEMONADE, [closed, port])
+    assert report.reachable and report.port == port and report.models == (LoadedModel("M"),)
+
+
+def test_api_switched_off_is_reported(server, discovery):
+    port = serve(server, {})  # A1111 without --api: every API path is 404
+    report = client.query(SD_WEBUI, [port])
+    assert report.problem == "not_found"
+    assert model_lines(report, None, discovery) == (
+        "Stable Diffusion WebUI läuft ohne API – mit --api starten, um das Modell zu sehen.",
+    )
+
+
+def _free_port():
+    import socket
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
 
 
 def test_only_loopback_hosts():

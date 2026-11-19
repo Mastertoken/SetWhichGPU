@@ -82,7 +82,7 @@
     {
       "@type": "Question",
       "name": "Can I see which GPU my local AI model (Ollama, LM Studio, ComfyUI) runs on?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Yes. SetWhichGPU measures the GPU load and video memory of every process, including CUDA compute, so you see on which graphics card Ollama, LM Studio or ComfyUI is working and how a large model is split across several GPUs. Optionally it also asks Ollama and LM Studio on your PC which models are loaded and shows them next to the measured GPU." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. SetWhichGPU measures the GPU load and video memory of every process, including CUDA compute, so you see on which graphics card Ollama, LM Studio or ComfyUI is working and how a large model is split across several GPUs. For Ollama, LM Studio, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI and text-generation-webui it also shows which models are loaded, next to the measured GPU – asked on your own PC only." }
     },
     {
       "@type": "Question",
@@ -296,7 +296,7 @@ footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--m
         <li>Approvers: <a href="https://github.com/Mastertoken">Mastertoken</a></li>
       </ul>
       <h3 id="privacy">Privacy</h3>
-      <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. SetWhichGPU has no telemetry and no update check; its settings and logs stay on your PC. Its only network feature is optional and off by default: if you enable “Show loaded AI models”, it asks Ollama and LM Studio running on your own PC (127.0.0.1 only) which models are loaded.</p>
+      <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. SetWhichGPU has no telemetry and no update check; its settings and logs stay on your PC. Its only network feature never leaves your PC: while the overlay shows a local AI program (Ollama, LM Studio, KoboldCpp, …), it asks that program on 127.0.0.1 which models are loaded. You can switch this off in the tray menu (“Show loaded AI models”).</p>
     </div>
   </section>
 
@@ -325,7 +325,7 @@ footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--m
       </details>
       <details>
         <summary>Can I see which GPU my local AI model (Ollama, LM Studio, ComfyUI) runs on?</summary>
-        <p>Yes. SetWhichGPU measures the GPU load and video memory of every process, including CUDA compute, so you see on which graphics card Ollama, LM Studio or ComfyUI is working and how a large model is split across several GPUs. Optionally (tray menu → Show loaded AI models) it also asks Ollama and LM Studio on your PC which models are loaded and shows them next to the measured GPU. These tools pick their GPU themselves; choose the GPU in the tool, for example with <code>CUDA_VISIBLE_DEVICES</code>.</p>
+        <p>Yes. SetWhichGPU measures the GPU load and video memory of every process, including CUDA compute, so you see on which graphics card Ollama, LM Studio or ComfyUI is working and how a large model is split across several GPUs. For Ollama, LM Studio, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI (A1111, Forge, SD.Next) and text-generation-webui it also shows which models are loaded, next to the measured GPU – asked on your own PC only. These tools pick their GPU themselves; choose the GPU in the tool, for example with <code>CUDA_VISIBLE_DEVICES</code>.</p>
       </details>
       <details>
         <summary>Is SetWhichGPU free?</summary>
