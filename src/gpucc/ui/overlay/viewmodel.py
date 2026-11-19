@@ -23,6 +23,7 @@ from gpucc.core.models import (
 from gpucc.i18n import decimal_separator, tr
 from gpucc.localai.runtimes import RUNTIMES, ModelReport
 from gpucc.monitoring.attribution import is_render_engine
+from gpucc.ui.overlay.colors import gpu_colors
 
 
 class Level(StrEnum):
@@ -49,6 +50,7 @@ class GpuRow:
     total_series: tuple[tuple[float, float], ...] = ()  # whole GPU (all applications)
     app_series: tuple[tuple[float, float], ...] = ()  # only the selected application; empty = not shown
     app_text: str = ""  # "Ollama 12 %" – the selected application's share of this GPU
+    color: str = ""  # the card's own text colour (gpucc.ui.overlay.colors)
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,6 +196,7 @@ def build_state(
     pids = target_pids if target is not None and target.running else ()
 
     # --- GPU rows: the big number is always the WHOLE card; the app's share is shown separately
+    colors = gpu_colors(discovery)
     rows: list[GpuRow] = []
     for g in discovery.gpus:
         t = snapshot.for_gpu(g.key) if snapshot else None
@@ -216,6 +219,7 @@ def build_state(
                 total_series=total_series,
                 app_series=app_series if shows_app else (),
                 app_text=f"{app_name} {app_share.get(g.key, 0.0):.0f} %" if shows_app else "",
+                color=colors.get(g.key, ""),
             )
         )
 

@@ -5,6 +5,7 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Each graphics card has its own colour (NVIDIA green, AMD red, Intel blue, extra colours for a second card of a vendor): card name, total load and chart line; applications in the list take the colour of the GPU they run on
 - Load chart per GPU (last 30 s) in the style of a download graph: whole graphics card vs. the selected application; the big number is now labelled "Total" and the app's share is shown separately
 - Game libraries: the new per-user Epic Games Launcher (2026) and Meta Horizon Link / Oculus VR libraries
 - Loaded local AI models (on by default, can be switched off in the tray menu): the overlay lists the models of Ollama, LM Studio/Bionic, Lemonade, KoboldCpp, llama.cpp, Stable Diffusion WebUI (A1111, Forge, SD.Next) and text-generation-webui next to the measured GPU – queried on 127.0.0.1 only (ADR-0003)

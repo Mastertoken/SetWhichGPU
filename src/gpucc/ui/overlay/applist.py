@@ -16,6 +16,7 @@ from gpucc.i18n import tr
 from gpucc.library.models import ExeSource, InstalledGame
 from gpucc.library.scanner import game_for_exe
 from gpucc.monitoring.attribution import observe, process_tree
+from gpucc.ui.overlay.colors import gpu_colors
 
 #: Windowless processes are listed only above these thresholds.
 BACKGROUND_MIN_RENDER_PCT = 1.0
@@ -57,6 +58,7 @@ class AppListRow:
     subtitle: str
     group: AppGroup
     activity: float  # render % – sorts active apps to the top
+    color: str = ""  # colour of the GPU the app is measured on (empty: no GPU use)
 
 
 def background_candidates(snapshot: GpuSnapshot | None) -> list[int]:
@@ -117,6 +119,7 @@ def build_app_list(
     rows: list[AppListRow] = []
     game_by_exe = {g.exe_path.lower(): g for g in games if g.exe_path}
     listed_games: set[str] = set()
+    colors = gpu_colors(discovery)
 
     def add(target: TargetApp, group: AppGroup, key: str | None = None, store: str | None = None) -> None:
         key = key or target.app_key
@@ -128,10 +131,12 @@ def build_app_list(
         pref_name = _short(discovery, pref.choice)
         parts: list[str] = [store] if store else []
         activity = 0.0
+        color = ""
         if target.running:
             obs = observe(process_tree(target.pid, dict(parents)), history)
             if obs.confidence is not Confidence.NONE and obs.key is not None:
                 activity = obs.per_gpu[0].render_pct if obs.per_gpu else 0.0
+                color = colors.get(obs.key, "")
                 load = f" {activity:.0f} %" if obs.confidence is Confidence.HIGH else ""
                 parts.append(tr("uses {gpu}", gpu=f"{_short(discovery, obs.key)}{load}"))
             else:
@@ -144,7 +149,7 @@ def build_app_list(
             parts.append(tr("preferred: GPU missing"))
         elif pref_name:
             parts.append(tr("preferred {gpu}", gpu=pref_name))
-        rows.append(AppListRow(key, target.display_name, " · ".join(parts), group, activity))
+        rows.append(AppListRow(key, target.display_name, " · ".join(parts), group, activity, color))
 
     for t in running:
         add(with_game(t, games), AppGroup.RUNNING)

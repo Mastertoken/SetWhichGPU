@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import re
 import time
 from collections.abc import Sequence
 
@@ -52,6 +53,7 @@ from gpucc.core.models import GpuKey
 from gpucc.i18n import tr
 from gpucc.ui.icons import app_pixmap
 from gpucc.ui.overlay.applist import AppGroup, AppListRow
+from gpucc.ui.overlay.colors import APP_COLOR
 from gpucc.ui.overlay.viewmodel import GpuRow, Level, OverlayState
 
 WIDTH = 480
@@ -67,6 +69,7 @@ _ROLE_SEARCH = Qt.ItemDataRole.UserRole + 1
 _ROLE_HEADER = Qt.ItemDataRole.UserRole + 2
 FOCUS_GRACE_S = 0.3
 
+_HEX_COLOR = re.compile(r"#[0-9A-Fa-f]{6}")
 _LEVEL_COLOR = {Level.OK: "#4CC38A", Level.WARN: "#F2B33D", Level.MUTED: "#8A9099", Level.ERROR: "#F0605D"}
 
 STYLE = """
@@ -195,8 +198,7 @@ class _DefaultCard(_SelectableCard):
         lay.addWidget(self.text, 1)
 
 
-TOTAL_COLOR = "#7A86FF"  # whole GPU
-APP_COLOR = "#E0559A"  # selected application
+TOTAL_COLOR = "#7A86FF"  # whole GPU, only if the card has no colour of its own
 CHART_HEIGHT = 40
 
 
@@ -209,8 +211,10 @@ class _LoadChart(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._series: list[tuple[tuple[tuple[float, float], ...], str]] = []
 
-    def set_series(self, total: Sequence[tuple[float, float]], app: Sequence[tuple[float, float]]) -> None:
-        self._series = [(tuple(total), TOTAL_COLOR), (tuple(app), APP_COLOR)]
+    def set_series(
+        self, total: Sequence[tuple[float, float]], app: Sequence[tuple[float, float]], color: str = ""
+    ) -> None:
+        self._series = [(tuple(total), color or TOTAL_COLOR), (tuple(app), APP_COLOR)]
         self.update()
 
     def paintEvent(self, _event: QPaintEvent) -> None:
@@ -261,8 +265,8 @@ class _GpuCard(_SelectableCard):
         self.badge = _label(name="badge")
         self.use = _label(tr("in use"), "badgeUse")
         self.pref = _label(tr("preferred"), "badgePref")
+        self._color = ""
         self.util = _label()
-        self.util.setStyleSheet(f"color: {TOTAL_COLOR}; font-weight: 600;")
         self.util.setToolTip(tr("Load of the whole graphics card – all applications together"))
         top.addWidget(self.name)
         top.addWidget(self.badge)
@@ -273,7 +277,7 @@ class _GpuCard(_SelectableCard):
         lay.addLayout(top)
         self.chart = _LoadChart()
         self.chart.setToolTip(
-            tr("Last 30 seconds. Blue: whole graphics card (all applications). Pink: the selected application.")
+            tr("Last 30 seconds. Card colour: whole graphics card (all apps). White: the selected app.")
         )
         lay.addWidget(self.chart)
         legend = QHBoxLayout()
@@ -296,7 +300,12 @@ class _GpuCard(_SelectableCard):
         self.use.setVisible(row.used_by_target)
         self.pref.setVisible(row.preferred)
         self.util.setText(row.util_text)
-        self.chart.set_series(row.total_series, row.app_series)
+        color = row.color or TOTAL_COLOR
+        if color != self._color:  # each card keeps its own colour for name, total and chart line
+            self._color = color
+            self.name.setStyleSheet(f"color: {color};")
+            self.util.setStyleSheet(f"color: {color}; font-weight: 600;")
+        self.chart.set_series(row.total_series, row.app_series, color)
         self.app_share.setText(f"▬ {row.app_text}" if row.app_text else "")
         self.app_share.setVisible(bool(row.app_text))
         self.metrics.setText("   ".join(p for p in (row.vram_text, row.temp_text, row.power_text) if p))
@@ -425,7 +434,9 @@ class _AppPanel(QFrame):
     @staticmethod
     def _html(row: AppListRow) -> str:
         sub = f"<div style='color:#9AA0A6; font-size:8.5pt'>{html.escape(row.subtitle)}</div>" if row.subtitle else ""
-        return f"<div style='font-weight:600'>{html.escape(row.title)}</div>{sub}"
+        # Colour only from our own palette (#RRGGBB) – never text from outside – so no style injection.
+        color = f" color:{row.color};" if _HEX_COLOR.fullmatch(row.color) else ""
+        return f"<div style='font-weight:600;{color}'>{html.escape(row.title)}</div>{sub}"
 
     def _update_in_place(self, rows: tuple[AppListRow, ...], current_key: str | None) -> None:
         for row in rows:

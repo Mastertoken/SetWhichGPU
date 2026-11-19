@@ -264,8 +264,9 @@ CATALOG: dict[str, str] = {
     "Load of the whole graphics card – all applications together": (
         "Carga de toda la tarjeta gráfica – todas las aplicaciones juntas"
     ),
-    "Last 30 seconds. Blue: whole graphics card (all applications). Pink: the selected application.": (
-        "Últimos 30 segundos. Azul: toda la tarjeta gráfica (todas las aplicaciones). Rosa: la aplicación seleccionada."
+    "Last 30 seconds. Card colour: whole graphics card (all apps). White: the selected app.": (
+        "Últimos 30 segundos. Línea del color de la tarjeta: toda la tarjeta gráfica (todas las "
+        "aplicaciones). Línea blanca: la aplicación seleccionada."
     ),
     "Share of the selected application in this graphics card's load": (
         "Parte de la aplicación seleccionada en la carga de esta tarjeta gráfica"
