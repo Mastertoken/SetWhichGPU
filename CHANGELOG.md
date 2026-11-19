@@ -5,6 +5,8 @@ All notable changes are documented here. The project follows [Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Analysis panel, stage D "Render passes": open RenderDoc with one click, capture a DX12/Vulkan frame there and import the `.rdc` – SetWhichGPU replays it in RenderDoc and shows the marker/pass tree with GPU times and render targets (RenderDoc does the capturing, SetWhichGPU never injects)
+- Analysis panel, stage C "GPU timeline": import of timestamped traces (Nsight Systems SQLite export incl. WDDM DMA packets, DXGI frames, Vulkan workloads, CUDA kernels and NVTX; Chrome/PyTorch-profiler JSON; own CSV) shown as queue lanes with frame windows, zoom and filter. A live ETW timeline is not implemented yet
 - Analysis panel (right side, button "📈 Analysis" or key F, ADR-0004): **Overview** – engine load (3D/Compute/Copy/Video), video memory and temperature/power of the selected app over 30 s / 2 min / 5 min; **Frames** – live frame analysis with the bundled Intel PresentMon (FPS, 1 %/0.1 % lows, frame time, GPU busy share with "GPU-limited / not GPU-limited" verdict, display latency, dropped frames, present mode, frame-time chart, CSV export). Nothing is injected into games. The required Windows permission (group "Performance Log Users") is requested once, the first time the panel is opened
 - Close button (✕) in the overlay header – closes the overlay also when it is pinned
 - Loading animation in the application list (rotating arrows with the app icon in the middle) while the first scan or list is loading
@@ -16,6 +18,7 @@ All notable changes are documented here. The project follows [Semantic Versionin
 - Release workflow: the installer is built by GitHub Actions (manual run or tag `vX.Y.Z`); a tag creates a draft release with the installer and its SHA-256 checksum
 
 ### Fixed
+- Uninstalling one installation no longer removes the autostart entry of another installation or of a source checkout
 - First opening of the application list could freeze for seconds (e.g. while a sleeping hard disk spins up): version info of games and saved programs is now read on the scan thread
 
 ### Security

@@ -2,7 +2,8 @@
 
 1. Ask a running instance to exit (it ends game mode; the helper re-enables the GPU).
 2. If a game-mode session still left a GPU disabled, re-enable it (one UAC prompt).
-3. Remove the autostart entry.
+3. Remove the autostart entry – only if it points to this installation (another installation or a
+   source checkout keeps its own).
 4. Optionally restore every GPU preference SetWhichGPU changed (journal based, like the tray command).
 
 The data folder (settings, journal, logs) is removed by the uninstaller itself afterwards.
@@ -13,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -34,6 +36,15 @@ class Outcome:
     gpu_reenabled: bool | None  # None = nothing to do
     autostart_removed: bool
     reverted: int | None  # None = not requested
+
+
+def points_to(command: str | None, exe: str) -> bool:
+    """Does a Run-key command start ``exe``? (first token, quoted or not, compared case-insensitively)."""
+    if not command:
+        return False
+    text = command.strip()
+    first = text[1:].split('"', 1)[0] if text.startswith('"') else text.split(" ", 1)[0]
+    return os.path.normcase(os.path.abspath(first)) == os.path.normcase(os.path.abspath(exe))
 
 
 def wait_until(condition: Callable[[], bool], timeout: float, sleep: Callable[[float], None] = time.sleep) -> bool:
@@ -99,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     from gpucc.branding import LEGACY_AUTOSTART_NAME
     from gpucc.diagnostics.logging import configure_logging
     from gpucc.diagnostics.paths import data_dir, log_dir
+    from gpucc.launch import self_command
     from gpucc.platform.win32.registry import AutostartEntry, UserGpuPreferenceRegistry
     from gpucc.profiles.store import ProfileStore
 
@@ -108,7 +120,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         gpu = reenable_gpu_if_needed(store)
         removed = True
+        own_exe = self_command()[0]
         for entry in (AutostartEntry(), AutostartEntry(LEGACY_AUTOSTART_NAME)):
+            # Only our own entry: another installation (or a source checkout) keeps its autostart.
+            if not points_to(entry.command(), own_exe):
+                continue
             try:
                 entry.disable()
             except OSError:

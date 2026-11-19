@@ -4,6 +4,41 @@
 """
 
 CATALOG: dict[str, str] = {
+    "Σ descendant GPU action times, which may overlap.": (
+        "Σ des temps GPU des actions descendantes, avec chevauchements possibles."
+    ),
+    "GPU timeline": "Chronologie GPU",
+    "Render passes": "Passes de rendu",
+    "Import timestamped queue events or a profiler trace.": (
+        "Importez des événements de file horodatés ou une trace de profilage."
+    ),
+    "Import trace…": "Importer une trace…",
+    "Frame window": "Fenêtre de trame",
+    "Entire trace": "Trace entière",
+    "Timeline zoom": "Zoom de la chronologie",
+    "Timeline position": "Position dans la chronologie",
+    "Filter by queue, process or event": "Filtrer par file, processus ou événement",
+    "Showing {shown} of {total} intervals · {ms} ms": "{shown} intervalles sur {total} · {ms} ms",
+    "{track} · {pct}% interval coverage": "{track} · {pct} % de couverture",
+    "Capture a frame in RenderDoc, then open its local capture file.": (
+        "Capturez une trame dans RenderDoc, puis ouvrez le fichier de capture local."
+    ),
+    "Open RenderDoc…": "Ouvrir RenderDoc…",
+    "Import capture…": "Importer une capture…",
+    "Action or marker": "Action ou marqueur",
+    "GPU replay (ms)": "Relecture GPU (ms)",
+    "Outputs": "Sorties",
+    "{api} · {n} actions": "{api} · {n} actions",
+    "Capture display limit reached": "Limite d’affichage de la capture atteinte",
+    "Choose an installed RenderDoc executable": "Choisir un exécutable RenderDoc installé",
+    "RenderDoc could not be opened.": "Impossible d’ouvrir RenderDoc.",
+    "Open timeline trace": "Ouvrir la trace de chronologie",
+    "Open RenderDoc capture": "Ouvrir une capture RenderDoc",
+    "Reading {file}…": "Lecture de {file}…",
+    "Trace import failed. Check the format and size.": "Échec de l’importation. Vérifiez le format et la taille.",
+    "Capture replay failed. Check RenderDoc and the capture API.": (
+        "Échec de la relecture. Vérifiez RenderDoc et l’API de la capture."
+    ),
     # --- hotkey modifiers
     "Ctrl": "Ctrl",
     "Shift": "Maj",

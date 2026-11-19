@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
+import csv
 import logging
+import subprocess
+import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
-from gpucc.analysis import perflog, presentmon
+from gpucc.analysis import nsight, perflog, presentmon, renderdoc, timeline
 from gpucc.analysis.overview import WINDOWS_S, trends
 from gpucc.analysis.perflog import Access
 from gpucc.core.models import TargetApp
+from gpucc.diagnostics.paths import data_dir
 from gpucc.i18n import tr
 from gpucc.ui.overlay.colors import gpu_colors
 
@@ -26,6 +31,7 @@ log = logging.getLogger(__name__)
 PERFLOG_ASKED = "perflog_asked"  # setting: the one-time permission question was shown
 STATS_FRAMES = 50_000  # frames kept for the statistics (≈ 14 min at 60 fps)
 UI_UPDATE_MS = 250
+_Result = TypeVar("_Result")
 
 
 class _Bridge(QObject):
@@ -33,6 +39,7 @@ class _Bridge(QObject):
 
     frame = Signal(object)
     ended = Signal(str)
+    imported = Signal(str, object, str)
 
 
 class AnalysisController(QObject):
@@ -50,6 +57,7 @@ class AnalysisController(QObject):
         self._bridge = _Bridge()
         self._bridge.frame.connect(self._frames.append)
         self._bridge.ended.connect(self._on_session_end)
+        self._bridge.imported.connect(self._finish_import)
         self._ui_timer = QTimer(self)
         self._ui_timer.setInterval(UI_UPDATE_MS)
         self._ui_timer.timeout.connect(self._update_frames_ui)
@@ -58,6 +66,81 @@ class AnalysisController(QObject):
         self._panel.stop_requested.connect(self.stop)
         self._panel.grant_requested.connect(self.grant)
         self._panel.export_requested.connect(self.export_csv)
+        self._panel.timeline.import_requested.connect(self.import_timeline)
+        self._panel.passes.import_requested.connect(self.import_capture)
+        self._panel.passes.launch_requested.connect(self.launch_renderdoc)
+        self._renderdoc: Path | None = None
+
+    def _file(self, title: str, pattern: str) -> Path | None:
+        with self._app.overlay.keep_open():
+            selected, _ = QFileDialog.getOpenFileName(self._app.overlay, title, "", pattern)
+        return Path(selected) if selected else None
+
+    def _find_renderdoc(self) -> Path | None:
+        path = self._renderdoc or renderdoc.installed()
+        if path is not None and renderdoc.local_executable(path):
+            return path
+        path = self._file(tr("Choose an installed RenderDoc executable"), "RenderDoc (qrenderdoc.exe)")
+        if path is not None and renderdoc.local_executable(path):
+            self._renderdoc = path
+            return path
+        return None
+
+    def launch_renderdoc(self) -> None:
+        exe = self._find_renderdoc()
+        if exe is None:
+            return
+        try:
+            subprocess.Popen([str(exe)], cwd=exe.parent)
+        except OSError:
+            log.exception("RenderDoc could not be opened")
+            self._panel.passes.note.setText(tr("RenderDoc could not be opened."))
+
+    def import_timeline(self) -> None:
+        path = self._file(tr("Open timeline trace"), "Trace (*.json *.csv *.json.gz *.csv.gz *.sqlite)")
+        if path is not None:
+            load = nsight.load if path.suffix.lower() == ".sqlite" else timeline.load_timeline
+            self._import("timeline", path, lambda: load(path))
+
+    def import_capture(self) -> None:
+        capture = self._file(tr("Open RenderDoc capture"), "RenderDoc (*.rdc)")
+        if capture is None:
+            return
+        exe = self._find_renderdoc()
+        if exe is not None:
+            self._import("capture", capture, lambda: renderdoc.replay(exe, capture, data_dir()))
+
+    def _import(self, kind: str, path: Path, work: Callable[[], _Result]) -> None:
+        page = self._panel.timeline if kind == "timeline" else self._panel.passes
+        page.open_button.setEnabled(False)
+        page.note.setText(tr("Reading {file}…", file=timeline.label(path.name)))
+
+        def run() -> None:
+            try:
+                result = work()
+            except (OSError, EOFError, ValueError, RuntimeError, subprocess.SubprocessError, csv.Error):
+                log.warning("Analysis import failed", exc_info=True)
+                self._bridge.imported.emit(kind, None, "")
+            else:
+                self._bridge.imported.emit(kind, result, timeline.label(path.name))
+
+        threading.Thread(target=run, name=f"analysis-{kind}", daemon=True).start()
+
+    def _finish_import(self, kind: str, result: object, name: str) -> None:
+        if kind == "timeline":
+            page = self._panel.timeline
+            page.open_button.setEnabled(True)
+            if isinstance(result, tuple):
+                page.set_trace(result, name)
+            else:
+                page.note.setText(tr("Trace import failed. Check the format and size."))
+        else:
+            passes = self._panel.passes
+            passes.open_button.setEnabled(True)
+            if isinstance(result, renderdoc.Capture):
+                passes.set_capture(result)
+            else:
+                passes.note.setText(tr("Capture replay failed. Check RenderDoc and the capture API."))
 
     # ------------------------------------------------------------------ panel open/close
     def on_toggled(self, open_: bool) -> None:

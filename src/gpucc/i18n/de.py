@@ -5,6 +5,35 @@ placeholders match.
 """
 
 CATALOG: dict[str, str] = {
+    "Σ descendant GPU action times, which may overlap.": (
+        "Σ der GPU-Zeiten untergeordneter Aktionen. Sie können sich überlappen."
+    ),
+    "GPU timeline": "GPU-Zeitleiste",
+    "Render passes": "Render-Passes",
+    "Import timestamped queue events or a profiler trace.": "Importiere Queue-Ereignisse mit Zeitstempeln oder einen Profiler-Trace.",
+    "Import trace…": "Trace importieren …",
+    "Frame window": "Frame-Zeitfenster",
+    "Entire trace": "Gesamter Trace",
+    "Timeline zoom": "Zoom der Zeitleiste",
+    "Timeline position": "Position in der Zeitleiste",
+    "Filter by queue, process or event": "Nach Queue, Prozess oder Ereignis filtern",
+    "Showing {shown} of {total} intervals · {ms} ms": "{shown} von {total} Intervallen · {ms} ms",
+    "{track} · {pct}% interval coverage": "{track} · {pct} % Zeitabdeckung",
+    "Capture a frame in RenderDoc, then open its local capture file.": "Nimm einen Frame in RenderDoc auf und öffne dann die lokale Aufnahmedatei.",
+    "Open RenderDoc…": "RenderDoc öffnen …",
+    "Import capture…": "Aufnahme importieren …",
+    "Action or marker": "Aktion oder Marker",
+    "GPU replay (ms)": "GPU-Replay (ms)",
+    "Outputs": "Ausgaben",
+    "{api} · {n} actions": "{api} · {n} Aktionen",
+    "Capture display limit reached": "Anzeigelimit der Aufnahme erreicht",
+    "Choose an installed RenderDoc executable": "Installierte RenderDoc-Anwendung auswählen",
+    "RenderDoc could not be opened.": "RenderDoc konnte nicht geöffnet werden.",
+    "Open timeline trace": "Trace für Zeitleiste öffnen",
+    "Open RenderDoc capture": "RenderDoc-Aufnahme öffnen",
+    "Reading {file}…": "{file} wird gelesen …",
+    "Trace import failed. Check the format and size.": "Trace-Import fehlgeschlagen. Prüfe Format und Größe.",
+    "Capture replay failed. Check RenderDoc and the capture API.": "Replay fehlgeschlagen. Prüfe RenderDoc und die API der Aufnahme.",
     # --- hotkey modifiers
     "Ctrl": "Strg",
     "Shift": "Umschalt",

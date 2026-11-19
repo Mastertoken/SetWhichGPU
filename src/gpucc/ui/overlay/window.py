@@ -107,6 +107,18 @@ QFrame#side { background: rgba(255,255,255,0.035); border: none;
 QFrame#sideRight { background: rgba(255,255,255,0.035); border: none;
                    border-left: 1px solid rgba(255,255,255,0.08);
                    border-top-right-radius: 14px; border-bottom-right-radius: 14px; }
+QGraphicsView, QTreeWidget { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+                              border-radius: 8px; color: #E8EAED; }
+QTreeWidget::item:selected { background: rgba(122,167,255,0.18); color: #E8EAED; }
+QHeaderView { background: transparent; border: none; }
+QHeaderView::section { background: #2A2E36; color: #9AA0A6; border: none; padding: 3px 6px; }
+QComboBox { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            padding: 3px 8px; color: #E8EAED; }
+QComboBox QAbstractItemView { background: #1E2128; color: #E8EAED; selection-background-color: rgba(122,167,255,0.30); }
+QSlider::groove:horizontal { height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+QSlider::handle:horizontal { background: #7AA7FF; width: 12px; margin: -5px 0; border-radius: 6px; }
+QSlider::handle:horizontal:disabled { background: #4A4F57; }
+QPushButton#rescan:disabled { color: #6B7078; }
 QLineEdit { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px; padding: 4px 8px; selection-background-color: #7AA7FF; }
 QLineEdit:focus { border: 1px solid #7AA7FF; }

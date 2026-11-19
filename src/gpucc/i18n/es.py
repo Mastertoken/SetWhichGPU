@@ -4,6 +4,41 @@
 """
 
 CATALOG: dict[str, str] = {
+    "Σ descendant GPU action times, which may overlap.": (
+        "Σ de los tiempos de GPU de las acciones descendientes, que pueden solaparse."
+    ),
+    "GPU timeline": "Cronología de GPU",
+    "Render passes": "Pasadas de renderizado",
+    "Import timestamped queue events or a profiler trace.": (
+        "Importa eventos de cola con marcas de tiempo o una traza de perfilado."
+    ),
+    "Import trace…": "Importar traza…",
+    "Frame window": "Ventana de fotograma",
+    "Entire trace": "Traza completa",
+    "Timeline zoom": "Zoom de la cronología",
+    "Timeline position": "Posición en la cronología",
+    "Filter by queue, process or event": "Filtrar por cola, proceso o evento",
+    "Showing {shown} of {total} intervals · {ms} ms": "{shown} de {total} intervalos · {ms} ms",
+    "{track} · {pct}% interval coverage": "{track} · {pct} % de cobertura",
+    "Capture a frame in RenderDoc, then open its local capture file.": (
+        "Captura un fotograma en RenderDoc y abre el archivo local de captura."
+    ),
+    "Open RenderDoc…": "Abrir RenderDoc…",
+    "Import capture…": "Importar captura…",
+    "Action or marker": "Acción o marcador",
+    "GPU replay (ms)": "Reproducción en GPU (ms)",
+    "Outputs": "Salidas",
+    "{api} · {n} actions": "{api} · {n} acciones",
+    "Capture display limit reached": "Se alcanzó el límite de visualización de la captura",
+    "Choose an installed RenderDoc executable": "Seleccionar un ejecutable de RenderDoc instalado",
+    "RenderDoc could not be opened.": "No se pudo abrir RenderDoc.",
+    "Open timeline trace": "Abrir traza de cronología",
+    "Open RenderDoc capture": "Abrir captura de RenderDoc",
+    "Reading {file}…": "Leyendo {file}…",
+    "Trace import failed. Check the format and size.": "Falló la importación. Comprueba el formato y el tamaño.",
+    "Capture replay failed. Check RenderDoc and the capture API.": (
+        "Falló la reproducción. Comprueba RenderDoc y la API de la captura."
+    ),
     # --- hotkey modifiers
     "Ctrl": "Ctrl",
     "Shift": "Mayús",

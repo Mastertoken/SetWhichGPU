@@ -22,6 +22,7 @@ from gpucc.core.models import GpuKey
 from gpucc.i18n import tr
 from gpucc.ui.overlay.charts import SeriesChart
 from gpucc.ui.overlay.colors import APP_COLOR
+from gpucc.ui.overlay.trace_pages import PassPage, TimelinePage
 from gpucc.ui.overlay.viewmodel import de, fmt_bytes_short
 
 ANALYSIS_WIDTH = 380
@@ -127,9 +128,22 @@ class AnalysisPanel(QFrame):
         head.addWidget(self.tab_overview)
         head.addWidget(self.tab_frames)
         lay.addLayout(head)
+        more = QHBoxLayout()
+        self.tab_timeline = _button(tr("GPU timeline"))
+        self.tab_passes = _button(tr("Render passes"))
+        self.tab_timeline.clicked.connect(lambda: self.show_tab(2))
+        self.tab_passes.clicked.connect(lambda: self.show_tab(3))
+        more.addWidget(self.tab_timeline)
+        more.addWidget(self.tab_passes)
+        more.addStretch(1)
+        lay.addLayout(more)
         self.pages = QStackedWidget()
         self.pages.addWidget(self._build_overview())
         self.pages.addWidget(self._build_frames())
+        self.timeline = TimelinePage()
+        self.passes = PassPage()
+        self.pages.addWidget(self.timeline)
+        self.pages.addWidget(self.passes)
         lay.addWidget(self.pages, 1)
         self.show_tab(0)
 
@@ -315,3 +329,5 @@ class AnalysisPanel(QFrame):
         self.pages.setCurrentIndex(index)
         _set_active(self.tab_overview, index == 0)
         _set_active(self.tab_frames, index == 1)
+        _set_active(self.tab_timeline, index == 2)
+        _set_active(self.tab_passes, index == 3)

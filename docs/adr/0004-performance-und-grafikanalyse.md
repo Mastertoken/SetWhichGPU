@@ -1,7 +1,7 @@
 # ADR-0004: Performance- und Grafikanalyse (rechtes Ausklapp-Panel)
 
 - Status: **angenommen** am 2026-11-19. Entscheidungen des Projektinhabers: Rechteabfrage **einmalig** beim ersten Öffnen des Analyse-Panels (Taste F oder Button); PresentMon **mitliefern**; externe Werkzeuge für Stufe D **erlaubt**; wichtigste APIs **DX12 und Vulkan** (→ RenderDoc zuerst, PIX für DX12 optional).
-- Umgesetzt: Stufe A (Übersicht) und B (Frames, PresentMon 2.6.0). Offen: D (RenderDoc/PIX), danach C.
+- Umgesetzt: Stufen A und B, D mit lokalem RenderDoc-Replay und C als Import von Zeitspuren. Der direkte ETW-Live-Consumer für C steht aus.
 - Kontext: Wunsch nach einem rechts ausklappbaren Panel für Performance- und Grafikanalyse: die einzelnen
   **Passes** auf der Grafikkarte sehen und **framebasierte Performanceanalyse** durchführen.
 
@@ -47,6 +47,33 @@ Farben je GPU wie im übrigen Overlay; alle Fremdtexte (Marker-Namen aus Aufnahm
 (siehe ADR-0003, Sicherheitsregeln gelten sinngemäß für Aufnahme- und ETW-Daten).
 
 ## Empfohlene Reihenfolge
+
+### Bedienung der implementierten Stufen C und D
+
+- **GPU-Zeitleiste → Trace importieren** öffnet lokal gespeicherte Zeitspuren. Frame-IDs wählen ein
+  aus den markierten Intervallen abgeleitetes Zeitfenster. Andere Spuren bleiben darin sichtbar.
+  Zoom und Positionsregler dienen zur Navigation. Farben gruppieren Prozesse, die Zeitabdeckung misst
+  die Vereinigung der angezeigten Intervalle je Spur. Lücken können auch durch fehlende Trace-Daten entstehen.
+- **Echtzeit-3D:** Nsight-Systems-SQLite-Exporte können DXGI-Aufrufe mit Frame-ID, Vulkan-Workloads und
+  gepaarte WDDM-DMA-Ereignisse enthalten. Ein DXGI-Frame-Fenster beschreibt die markierten Aufrufzeiten.
+  DMA-Balken erscheinen nur für passende Start-/Stop-Ereignisse. Die Prozesszuordnung verwendet eindeutige
+  Queue-Submit-Daten. Hardware und Aufnahmeoptionen bestimmen, welche Tabellen vorhanden sind.
+- **KI-Inferenz und Bildrendering:** PyTorch-Profiler-Exporte aus `export_chrome_trace()` liefern CPU-Operatoren
+  und aufgezeichnete Geräteaktivität. Nsight-Systems-SQLite-Exporte (`nsys export --type sqlite ...`) liefern
+  CUDA-Kernel, Kopien, Speicherinitialisierungen und NVTX-Bereiche. Chrome-JSON unterstützt vollständige
+  Intervalle (`X`) und gepaarte Start-/Ende-Ereignisse (`B`/`E`, Zeit in µs). Für JSON und CSV ist gzip möglich.
+- **Eigene Zeitspuren:** UTF-8-CSV mit den Pflichtspalten `start_us,end_us,engine,process` und den optionalen
+  Spalten `gpu,queue,name,frame`. Windows Performance Analyzer kann ETW-Tabellen als CSV exportieren.
+  Spalten und Einheiten werden vor dem Import auf dieses Schema umgesetzt. Für genaue Frame-Grenzen
+  kann die Datei ein eigenes Intervall mit dem gewünschten Frame-Label enthalten.
+- **Render-Passes:** RenderDoc per Klick öffnen, dort eine DX12- oder Vulkan-Anwendung aufnehmen und die
+  lokale `.rdc`-Datei über **Aufnahme importieren** laden. Der Unterprozess liest beim Replay Marker,
+  Draws, Dispatches, Render-Targets und verfügbare GPU-Zeiten. Die Zeiten stammen vom Replay auf dem
+  lokalen System. Fehlende Marker oder Messwerte bleiben als solche erkennbar. PIX bleibt optional.
+- Importgrenzen: 32 MiB unkomprimierter Text, maximal 200.000 Trace-Intervalle, maximal 2.000 gezeichnete
+  Intervalle pro Ansicht und 5.000 Aktionen pro Capture. SQLite wird schreibgeschützt geöffnet.
+
+### Ursprüngliche Reihenfolge
 
 1. **A** (klein, ohne neue Rechte) – sofort machbar.
 2. **B** mit PresentMon – größter Nutzen; Entscheidung zu Rechten nötig (siehe Fragen).
