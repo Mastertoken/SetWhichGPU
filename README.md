@@ -71,6 +71,7 @@ Safety rules ([ADR-0002](docs/adr/0002-spielmodus-gpu-voruebergehend-deaktiviere
 - Options: start with Windows, desktop shortcut
 - Uninstall via *Settings → Apps*: closes SetWhichGPU, removes autostart and asks whether to **restore the GPU preferences** it changed and whether to delete its settings and logs
 - The installer is not code-signed yet, so Windows SmartScreen may warn ("Windows protected your PC" → *More info* → *Run anyway*). Each release lists the SHA-256 checksum of the installer
+- **Smart App Control:** if it is switched on (*Windows Security → App & browser control → Smart App Control*), Windows blocks unsigned programs without asking – SetWhichGPU then does not start at all, not even with Windows (the log in `%LOCALAPPDATA%\SetWhichGPU\logs` stays empty; *Event Viewer → Applications and Services Logs → Microsoft → Windows → CodeIntegrity → Operational* shows the block). Windows can switch it on by itself after its evaluation period. Until the releases are code-signed the only way is to turn Smart App Control off – depending on the Windows version it can then only be switched on again by resetting Windows, so decide deliberately
 
 SetWhichGPU then lives in the system tray. Language: tray menu → *Language*. Hotkey: `Ctrl+Alt+G` (another one via the environment variable `GPUCC_HOTKEY`, e.g. `Ctrl+Shift+F9`; a settings dialog is planned).
 
@@ -84,6 +85,8 @@ cd SetWhichGPU
 uv sync
 uv run python -m gpucc
 ```
+
+With Smart App Control switched on, the Python builds that uv downloads are blocked (they are unsigned). Use the signed Python from python.org for the virtual environment instead: `winget install Python.Python.3.13`, then `uv sync --python-preference only-system`.
 
 Build the installer yourself: `.\tools\release\build_installer.ps1` (needs [Inno Setup 6](https://jrsoftware.org/isinfo.php): `winget install JRSoftware.InnoSetup`). Official installers are built by GitHub Actions ([release workflow](.github/workflows/release.yml)); each release links the run that built it.
 

@@ -287,6 +287,7 @@ footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--m
         <li>Options: start with Windows, desktop shortcut.</li>
         <li>Uninstall via <i>Settings → Apps</i>: SetWhichGPU closes, removes its autostart and asks whether to <b>restore the GPU preferences</b> it changed.</li>
         <li>The installer is not code-signed yet, so Windows SmartScreen may warn: choose <i>More info → Run anyway</i>. The SHA-256 checksum is listed on the <a href="https://github.com/Mastertoken/SetWhichGPU/releases/latest">release page</a>.</li>
+        <li><b>Smart App Control:</b> if it is switched on (<i>Windows Security → App &amp; browser control → Smart App Control</i>), Windows blocks unsigned programs without asking – SetWhichGPU then does not start at all, not even with Windows. Windows can switch it on by itself after its evaluation period. Until the releases are code-signed the only way is to turn Smart App Control off; depending on the Windows version it can then only be switched on again by resetting Windows.</li>
       </ul>
       <p class="small">Requires Windows 11 (64-bit). Language follows Windows (English, German, Spanish, French) and can be changed in the tray menu. Developers can also <a href="https://github.com/Mastertoken/SetWhichGPU#run-from-source">run it from source</a>.</p>
       <h3 id="code-signing">Code signing policy</h3>
